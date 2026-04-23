@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash Risk Control Tracker V3</title>
+
+<style>
+body {
+  font-family: Arial;
+  background:#0b1220;
+  color:white;
+  margin:0;
+  padding:12px;
+}
+
+.card {
+  background:#111827;
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:12px;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  margin-top:6px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:none;
+  background:#1f2937;
+  color:white;
+}
+
+button {
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  margin:5px;
+  width:48%;
+}
+
+.win { background:#22c55e; }
+.lose { background:#ef4444; color:white; }
+.reset { background:#3b82f6; color:white; width:100%; }
+
+.stat {
+  margin:6px 0;
+  padding:8px;
+  background:#1f2937;
+  border-radius:8px;
+}
+
+.safe { color:#22c55e; font-weight:bold; }
+.warn { color:#facc15; font-weight:bold; }
+.danger { color:#ef4444; font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>📊 Crash Risk Control Tracker V3</h2>
+
+  <label>自动模式（2% bankroll）</label>
+  <input id="autoMode" type="checkbox" checked>
+
+  <label>手动下注金额</label>
+  <input id="bet" type="number" value="0.5">
+
+  <label>倍率（建议 3）</label>
+  <input id="mult" type="number" value="3">
+
+  <button class="win" onclick="addWin()">WIN</button>
+  <button class="lose" onclick="addLose()">LOSE</button>
+
+  <div class="stat">建议下注：$<span id="suggestBet">0</span></div>
+</div>
+
+<div class="card">
+  <h3>💰 资金</h3>
+
+  <div class="stat">本金：$<span id="balance">32.25</span></div>
+  <div class="stat">利润：$<span id="profit">0</span></div>
+  <div class="stat">返还：$<span id="ret">0</span></div>
+  <div class="stat">状态：<span id="status" class="safe">运行中</span></div>
+</div>
+
+<div class="card">
+  <h3>📈 统计</h3>
+
+  <div class="stat">局数：<span id="total">0</span></div>
+  <div class="stat">胜场：<span id="winCount">0</span></div>
+  <div class="stat">败场：<span id="loseCount">0</span></div>
+  <div class="stat">胜率：<span id="rate">0%</span></div>
+
+  <div class="stat">连赢：<span id="winStreak">0</span></div>
+  <div class="stat">连输：<span id="loseStreak">0</span></div>
+</div>
+
+<div class="card">
+  <button class="reset" onclick="resetAll()">重置</button>
+</div>
+
+<script>
+
+// ====== 核心数据（已更新32.25） ======
+let balance = 28.19;
+
+let total = 0;
+let winCount = 0;
+let loseCount = 0;
+
+let profit = 0;
+let ret = 0;
+
+let winStreak = 0;
+let loseStreak = 0;
+
+let stopped = false;
+
+// ====== 自动下注 ======
+function autoBet(){
+  return balance * 0.03;
+}
+
+function bet(){
+  if(document.getElementById("autoMode").checked){
+    return autoBet();
+  }
+  return parseFloat(document.getElementById("bet").value) || 0;
+}
+
+function mult(){
+  return parseFloat(document.getElementById("mult").value) || 3;
+}
+
+// ====== 风控 ======
+function checkRisk(){
+
+  // 止损（约 -25%）
+  if(balance <= 10){
+    stopped = true;
+  }
+
+  // 止盈（约 +25%）
+  if(balance >= 45){
+    stopped = true;
+  }
+}
+
+// ====== 状态 ======
+function updateStatus(){
+
+  let status = document.getElementById("status");
+
+  if(stopped){
+    status.innerText = "已停止（风控触发）";
+    status.className = "danger";
+    return;
+  }
+
+  if(loseStreak >= 5){
+    status.innerText = "危险（5连输）";
+    status.className = "danger";
+  } else if(loseStreak >= 3){
+    status.innerText = "警告（连输）";
+    status.className = "warn";
+  } else {
+    status.innerText = "运行中";
+    status.className = "safe";
+  }
+}
+
+// ====== UI更新 ======
+function update(){
+
+  document.getElementById("balance").innerText = balance.toFixed(2);
+  document.getElementById("profit").innerText = profit.toFixed(2);
+  document.getElementById("ret").innerText = ret.toFixed(2);
+
+  document.getElementById("total").innerText = total;
+  document.getElementById("winCount").innerText = winCount;
+  document.getElementById("loseCount").innerText = loseCount;
+
+  let rate = total ? (winCount/total*100) : 0;
+  document.getElementById("rate").innerText = rate.toFixed(2)+"%";
+
+  document.getElementById("winStreak").innerText = winStreak;
+  document.getElementById("loseStreak").innerText = loseStreak;
+
+  document.getElementById("suggestBet").innerText = autoBet().toFixed(2);
+
+  localStorage.setItem("balance", balance);
+
+  updateStatus();
+  checkRisk();
+}
+
+// ====== WIN ======
+function addWin(){
+
+  if(stopped) return;
+
+  let b = bet();
+  let m = mult();
+
+  let winAmount = b * m;
+  let gain = winAmount - b;
+
+  balance += gain;
+  profit += gain;
+  ret += winAmount;
+
+  winCount++;
+  total++;
+
+  winStreak++;
+  loseStreak = 0;
+
+  update();
+}
+
+// ====== LOSE ======
+function addLose(){
+
+  if(stopped) return;
+
+  let b = bet();
+
+  balance -= b;
+  profit -= b;
+
+  loseCount++;
+  total++;
+
+  loseStreak++;
+  winStreak = 0;
+
+  update();
+}
+
+// ====== RESET ======
+function resetAll(){
+
+  balance = 28.19;
+
+  total = 0;
+  winCount = 0;
+  loseCount = 0;
+
+  profit = 0;
+  ret = 0;
+
+  winStreak = 0;
+  loseStreak = 0;
+
+  stopped = false;
+
+  update();
+}
+
+update();
+
+</script>
+
+</body>
+</html>
