@@ -106,7 +106,7 @@ button {
 <script>
 
 // ====== 核心数据（已更新32.25） ======
-let balance = 28.19;
+let balance = 14.95;
 
 let total = 0;
 let winCount = 0;
@@ -140,7 +140,7 @@ function mult(){
 function checkRisk(){
 
   // 止损（约 -25%）
-  if(balance <= 10){
+  if(balance <= 5){
     stopped = true;
   }
 
@@ -244,7 +244,7 @@ function addLose(){
 // ====== RESET ======
 function resetAll(){
 
-  balance = 28.19;
+  balance = 14.95;
 
   total = 0;
   winCount = 0;
