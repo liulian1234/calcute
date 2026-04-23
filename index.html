@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Crash Tracker V5</title>
+<title>Crash Tracker V6</title>
 
 <style>
 body { background:#0b1220; color:white; font-family:Arial; padding:12px; }
@@ -30,18 +30,18 @@ button { padding:12px; border:none; border-radius:10px; width:48%; margin:5px; f
 <label>目标金额</label>
 <input id="targetBalance" type="number">
 
-<label>模式选择</label>
+<label>模式</label>
 <select id="mode">
-  <option value="A">A 保守稳定</option>
+  <option value="A">A 保守</option>
   <option value="B">B 进攻</option>
   <option value="C">C 高风险</option>
+  <option value="D">D 自动模式（推荐）</option>
 </select>
 
 <button class="start" onclick="startSystem()">开始</button>
 </div>
 
 <div class="card">
-<h3>💰 资金</h3>
 <div class="stat">当前：$<span id="balance">0</span></div>
 <div class="stat">目标：$<span id="target">0</span></div>
 <div class="stat">利润：$<span id="profit">0</span></div>
@@ -51,13 +51,14 @@ button { padding:12px; border:none; border-radius:10px; width:48%; margin:5px; f
 <div class="card">
 <button class="win" onclick="addWin()">WIN</button>
 <button class="lose" onclick="addLose()">LOSE</button>
-<div class="stat">建议下注：$<span id="bet">0</span></div>
+<div class="stat">当前下注：$<span id="bet">0</span></div>
+<div class="stat">当前风险：<span id="riskShow">0%</span></div>
 </div>
 
 <div class="card">
-<h3>📊 数据</h3>
 <div class="stat">局数：<span id="total">0</span></div>
 <div class="stat">胜率：<span id="rate">0%</span></div>
+<div class="stat">连赢：<span id="winStreak">0</span></div>
 <div class="stat">连输：<span id="loseStreak">0</span></div>
 </div>
 
@@ -65,8 +66,10 @@ button { padding:12px; border:none; border-radius:10px; width:48%; margin:5px; f
 
 let balance=0, target=0, profit=0;
 let total=0, win=0, lose=0;
-let loseStreak=0;
+let loseStreak=0, winStreak=0;
+
 let started=false, stopped=false;
+let mode="B";
 
 let risk=0.03;
 let maxLose=5;
@@ -76,14 +79,13 @@ function startSystem(){
 
   balance = parseFloat(startBalance.value);
   target = parseFloat(targetBalance.value);
-  let mode = document.getElementById("mode").value;
+  mode = document.getElementById("mode").value;
 
   if(!balance || !target){
     alert("输入完整");
     return;
   }
 
-  // 模式设定
   if(mode=="A"){ risk=0.02; maxLose=3; }
   if(mode=="B"){ risk=0.03; maxLose=5; }
   if(mode=="C"){ risk=0.05; maxLose=7; }
@@ -92,13 +94,36 @@ function startSystem(){
   stopped=false;
 
   profit=0;
-  total=0; win=0; lose=0; loseStreak=0;
+  total=0; win=0; lose=0;
+  loseStreak=0; winStreak=0;
 
   update();
 }
 
+// ===== 自动模式逻辑 =====
+function updateAutoRisk(){
+
+  if(mode !== "D") return;
+
+  if(loseStreak >= 4){
+    risk = 0.01;
+  }
+  else if(loseStreak >= 2){
+    risk = 0.02;
+  }
+  else if(winStreak >= 3){
+    risk = 0.04;
+  }
+  else{
+    risk = 0.03;
+  }
+
+  maxLose = 6;
+}
+
 // ===== 下注 =====
 function calcBet(){
+  updateAutoRisk();
   return balance * risk;
 }
 
@@ -107,12 +132,13 @@ function addWin(){
   if(!started || stopped) return;
 
   let b = calcBet();
-  let gain = b * 2; // 3x profit
+  let gain = b * 2;
 
   balance += gain;
   profit += gain;
 
   win++; total++;
+  winStreak++;
   loseStreak=0;
 
   check();
@@ -130,6 +156,7 @@ function addLose(){
 
   lose++; total++;
   loseStreak++;
+  winStreak=0;
 
   check();
   update();
@@ -169,7 +196,10 @@ function update(){
   document.getElementById("rate").innerText = rate.toFixed(1)+"%";
 
   document.getElementById("loseStreak").innerText = loseStreak;
+  document.getElementById("winStreak").innerText = winStreak;
+
   document.getElementById("bet").innerText = calcBet().toFixed(2);
+  document.getElementById("riskShow").innerText = (risk*100).toFixed(1)+"%";
 }
 
 </script>
