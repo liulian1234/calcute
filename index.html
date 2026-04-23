@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Crash Tracker V6</title>
+<title>Crash Tracker V7</title>
 
 <style>
 body { background:#0b1220; color:white; font-family:Arial; padding:12px; }
@@ -62,8 +62,19 @@ button { padding:12px; border:none; border-radius:10px; width:48%; margin:5px; f
 <div class="stat">连输：<span id="loseStreak">0</span></div>
 </div>
 
+<div class="card">
+<h3>⏱️ 游玩时间</h3>
+<div class="stat">开始时间：<span id="startTime">-</span></div>
+<div class="stat">已玩时长：<span id="duration">00:00:00</span></div>
+</div>
+
+<div class="card">
+<button class="start" onclick="saveData()">💾 保存数据</button>
+</div>
+
 <script>
 
+// ===== 核心 =====
 let balance=0, target=0, profit=0;
 let total=0, win=0, lose=0;
 let loseStreak=0, winStreak=0;
@@ -73,6 +84,10 @@ let mode="B";
 
 let risk=0.03;
 let maxLose=5;
+
+// ===== 时间 =====
+let startTimestamp = 0;
+let timerInterval = null;
 
 // ===== 启动 =====
 function startSystem(){
@@ -97,10 +112,18 @@ function startSystem(){
   total=0; win=0; lose=0;
   loseStreak=0; winStreak=0;
 
+  // 时间
+  startTimestamp = Date.now();
+  document.getElementById("startTime").innerText =
+    new Date(startTimestamp).toLocaleTimeString();
+
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+
   update();
 }
 
-// ===== 自动模式逻辑 =====
+// ===== 自动模式 =====
 function updateAutoRisk(){
 
   if(mode !== "D") return;
@@ -182,6 +205,56 @@ function check(){
     status.innerText="💀 爆仓";
     status.className="danger";
   }
+}
+
+// ===== 时间更新 =====
+function updateTimer(){
+
+  let now = Date.now();
+  let diff = Math.floor((now - startTimestamp) / 1000);
+
+  let h = String(Math.floor(diff / 3600)).padStart(2,'0');
+  let m = String(Math.floor((diff % 3600)/60)).padStart(2,'0');
+  let s = String(diff % 60).padStart(2,'0');
+
+  document.getElementById("duration").innerText = `${h}:${m}:${s}`;
+}
+
+// ===== 保存 =====
+function saveData(){
+
+  if(!started){
+    alert("还没开始");
+    return;
+  }
+
+  let data = {
+    startBalance: parseFloat(startBalance.value),
+    target: target,
+    mode: mode,
+    currentBalance: balance,
+    profit: profit,
+    total: total,
+    win: win,
+    lose: lose,
+    winStreak: winStreak,
+    loseStreak: loseStreak,
+    duration: document.getElementById("duration").innerText,
+    time: new Date().toLocaleString()
+  };
+
+  let blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
+
+  let url = URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "crash_session.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
 }
 
 // ===== UI =====
