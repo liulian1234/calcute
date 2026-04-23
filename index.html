@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash Risk Control Tracker V3</title>
+<title>Crash Risk Control Tracker V4</title>
 
 <style>
 body {
@@ -61,9 +61,13 @@ button {
 <body>
 
 <div class="card">
-  <h2>📊 Crash Risk Control Tracker V3</h2>
+  <h2>📊 Crash Risk Control Tracker V4</h2>
 
-  <label>自动模式（2% bankroll）</label>
+  <label>初始本金（先输入再开始）</label>
+  <input id="startBalance" type="number" placeholder="输入你的本金">
+  <button class="reset" onclick="startSystem()">开始</button>
+
+  <label>自动模式（3% bankroll）</label>
   <input id="autoMode" type="checkbox" checked>
 
   <label>手动下注金额</label>
@@ -81,10 +85,10 @@ button {
 <div class="card">
   <h3>💰 资金</h3>
 
-  <div class="stat">本金：$<span id="balance">32.25</span></div>
+  <div class="stat">本金：$<span id="balance">0</span></div>
   <div class="stat">利润：$<span id="profit">0</span></div>
   <div class="stat">返还：$<span id="ret">0</span></div>
-  <div class="stat">状态：<span id="status" class="safe">运行中</span></div>
+  <div class="stat">状态：<span id="status" class="safe">未启动</span></div>
 </div>
 
 <div class="card">
@@ -105,8 +109,8 @@ button {
 
 <script>
 
-// ====== 核心数据（已更新32.25） ======
-let balance = 14.95;
+// ====== 核心数据 ======
+let balance = 0;
 
 let total = 0;
 let winCount = 0;
@@ -119,6 +123,37 @@ let winStreak = 0;
 let loseStreak = 0;
 
 let stopped = false;
+let started = false;
+
+// ====== 启动系统 ======
+function startSystem(){
+
+  let input = parseFloat(document.getElementById("startBalance").value);
+
+  if(!input || input <= 0){
+    alert("请输入正确本金");
+    return;
+  }
+
+  balance = input;
+  started = true;
+
+  total = 0;
+  winCount = 0;
+  loseCount = 0;
+
+  profit = 0;
+  ret = 0;
+
+  winStreak = 0;
+  loseStreak = 0;
+
+  stopped = false;
+
+  localStorage.setItem("balance", balance);
+
+  update();
+}
 
 // ====== 自动下注 ======
 function autoBet(){
@@ -139,13 +174,11 @@ function mult(){
 // ====== 风控 ======
 function checkRisk(){
 
-  // 止损（约 -25%）
-  if(balance <= 5){
+  if(balance <= 0){
     stopped = true;
   }
 
-  // 止盈（约 +25%）
-  if(balance >= 45){
+  if(balance >= (parseFloat(localStorage.getItem("balance")) * 1.4)){
     stopped = true;
   }
 }
@@ -154,6 +187,12 @@ function checkRisk(){
 function updateStatus(){
 
   let status = document.getElementById("status");
+
+  if(!started){
+    status.innerText = "未启动";
+    status.className = "warn";
+    return;
+  }
 
   if(stopped){
     status.innerText = "已停止（风控触发）";
@@ -192,8 +231,6 @@ function update(){
 
   document.getElementById("suggestBet").innerText = autoBet().toFixed(2);
 
-  localStorage.setItem("balance", balance);
-
   updateStatus();
   checkRisk();
 }
@@ -201,7 +238,7 @@ function update(){
 // ====== WIN ======
 function addWin(){
 
-  if(stopped) return;
+  if(!started || stopped) return;
 
   let b = bet();
   let m = mult();
@@ -225,7 +262,7 @@ function addWin(){
 // ====== LOSE ======
 function addLose(){
 
-  if(stopped) return;
+  if(!started || stopped) return;
 
   let b = bet();
 
@@ -244,7 +281,8 @@ function addLose(){
 // ====== RESET ======
 function resetAll(){
 
-  balance = 14.95;
+  balance = 0;
+  started = false;
 
   total = 0;
   winCount = 0;
@@ -259,6 +297,14 @@ function resetAll(){
   stopped = false;
 
   update();
+}
+
+// ====== 自动填上次本金 ======
+window.onload = function(){
+  let saved = localStorage.getItem("balance");
+  if(saved){
+    document.getElementById("startBalance").value = saved;
+  }
 }
 
 update();
