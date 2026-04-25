@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>终极概率分析系统 V1</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0b1220;
+  color: white;
+  padding: 20px;
+}
+
+.card {
+  background: #111827;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+input {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  margin-right: 5px;
+}
+
+.warning {
+  color: #f87171;
+}
+
+.safe {
+  color: #34d399;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔥 终极概率分析系统</h2>
+
+<div class="card">
+  <input id="inputValue" placeholder="输入倍率 (例如 1.5)">
+  <button onclick="addData()">添加</button>
+  <button onclick="clearData()">清空</button>
+</div>
+
+<div class="card">
+  <h3>📦 数据</h3>
+  <div id="dataList"></div>
+</div>
+
+<div class="card">
+  <h3>📊 分析</h3>
+  <div id="analysis"></div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("data")) || [];
+
+function save() {
+  localStorage.setItem("data", JSON.stringify(data));
+}
+
+function addData() {
+  let val = document.getElementById("inputValue").value;
+  if (!val) return;
+
+  data.push(val);
+  save();
+  document.getElementById("inputValue").value = "";
+  render();
+}
+
+function clearData() {
+  data = [];
+  save();
+  render();
+}
+
+function render() {
+  document.getElementById("dataList").innerText = data.join(", ");
+
+  if (data.length === 0) return;
+
+  let count = {};
+  data.forEach(v => count[v] = (count[v] || 0) + 1);
+
+  let total = data.length;
+  let result = "";
+
+  // 概率
+  for (let key in count) {
+    let prob = ((count[key] / total) * 100).toFixed(2);
+    result += `值 ${key} → ${count[key]}次 (${prob}%) <br>`;
+  }
+
+  // 🔥 连续检测
+  let last = data[data.length - 1];
+  let streak = 1;
+
+  for (let i = data.length - 2; i >= 0; i--) {
+    if (data[i] === last) streak++;
+    else break;
+  }
+
+  result += `<br>🔥 当前连续: ${last} x ${streak}次<br>`;
+
+  // 🔥 风险判断
+  if (streak >= 3) {
+    result += `<span class="warning">⚠️ 已连续 ${streak} 次，风险上升，建议暂停</span><br>`;
+  } else {
+    result += `<span class="safe">✅ 正常范围</span><br>`;
+  }
+
+  // 🔥 热门
+  let maxKey = Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b);
+  result += `<br>🔥 热门值: ${maxKey}`;
+
+  // 🔥 冷门
+  let minKey = Object.keys(count).reduce((a, b) => count[a] < count[b] ? a : b);
+  result += `<br>❄️ 冷门值: ${minKey}`;
+
+  // 🔥 简单建议
+  if (streak >= 4) {
+    result += `<br><span class="warning">👉 强烈建议暂停或减注</span>`;
+  } else if (streak === 1) {
+    result += `<br><span class="safe">👉 可观察下一局</span>`;
+  }
+
+  document.getElementById("analysis").innerHTML = result;
+}
+
+render();
+</script>
+
+</body>
+</html>
