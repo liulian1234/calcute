@@ -1,147 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>终极概率分析系统 V1</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash 风险分析系统</title>
 <style>
 body {
-  font-family: Arial;
-  background: #0b1220;
-  color: white;
-  padding: 20px;
+  font-family: Arial, sans-serif;
+  background:#0b1220;
+  color:white;
+  margin:0;
+  padding:16px;
 }
-
 .card {
-  background: #111827;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 12px;
+  background:#111827;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:14px;
 }
-
+textarea {
+  width:100%;
+  height:160px;
+  border-radius:12px;
+  padding:10px;
+  font-size:15px;
+}
 button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
-  cursor: pointer;
+  background:#22c55e;
+  color:#000;
+  border:none;
+  padding:10px 16px;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:10px;
 }
-
-input {
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
-  margin-right: 5px;
-}
-
-.warning {
-  color: #f87171;
-}
-
-.safe {
-  color: #34d399;
-}
+.good { color:#22c55e; }
+.warn { color:#facc15; }
+.danger { color:#ef4444; }
+.big { font-size:22px; font-weight:bold; }
 </style>
 </head>
 
 <body>
 
-<h2>🔥 终极概率分析系统</h2>
+<h2>📊 Crash 风险分析系统</h2>
 
 <div class="card">
-  <input id="inputValue" placeholder="输入倍率 (例如 1.5)">
-  <button onclick="addData()">添加</button>
-  <button onclick="clearData()">清空</button>
+  <p>把 Google Sheet 里的倍率复制进来，例如：</p>
+  <p>1.03, 2.15, 6.06, 1.00, 10.61</p>
+  <textarea id="inputData" placeholder="输入倍率数据，用逗号或换行分开"></textarea>
+  <button onclick="analyze()">开始分析</button>
 </div>
 
 <div class="card">
-  <h3>📦 数据</h3>
-  <div id="dataList"></div>
+  <h3>📈 统计结果</h3>
+  <div id="result">等待输入数据...</div>
 </div>
 
 <div class="card">
-  <h3>📊 分析</h3>
-  <div id="analysis"></div>
+  <h3>⚠️ 风险管理建议</h3>
+  <div id="risk">等待分析...</div>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("data")) || [];
+function analyze() {
+  const raw = document.getElementById("inputData").value;
 
-function save() {
-  localStorage.setItem("data", JSON.stringify(data));
-}
+  const data = raw
+    .split(/[\s,，]+/)
+    .map(Number)
+    .filter(v => !isNaN(v) && v >= 1);
 
-function addData() {
-  let val = document.getElementById("inputValue").value;
-  if (!val) return;
-
-  data.push(val);
-  save();
-  document.getElementById("inputValue").value = "";
-  render();
-}
-
-function clearData() {
-  data = [];
-  save();
-  render();
-}
-
-function render() {
-  document.getElementById("dataList").innerText = data.join(", ");
-
-  if (data.length === 0) return;
-
-  let count = {};
-  data.forEach(v => count[v] = (count[v] || 0) + 1);
-
-  let total = data.length;
-  let result = "";
-
-  // 概率
-  for (let key in count) {
-    let prob = ((count[key] / total) * 100).toFixed(2);
-    result += `值 ${key} → ${count[key]}次 (${prob}%) <br>`;
+  if (data.length === 0) {
+    document.getElementById("result").innerHTML = "没有有效数据";
+    return;
   }
 
-  // 🔥 连续检测
-  let last = data[data.length - 1];
-  let streak = 1;
+  const total = data.length;
 
-  for (let i = data.length - 2; i >= 0; i--) {
-    if (data[i] === last) streak++;
+  const hit5 = data.filter(v => v >= 5).length;
+  const hit10 = data.filter(v => v >= 10).length;
+
+  const prob5 = hit5 / total;
+  const prob10 = hit10 / total;
+
+  const avgWait5 = prob5 > 0 ? (1 / prob5).toFixed(2) : "暂无";
+  const avgWait10 = prob10 > 0 ? (1 / prob10).toFixed(2) : "暂无";
+
+  let miss5 = 0;
+  let miss10 = 0;
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i] < 5) miss5++;
     else break;
   }
 
-  result += `<br>🔥 当前连续: ${last} x ${streak}次<br>`;
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i] < 10) miss10++;
+    else break;
+  }
 
-  // 🔥 风险判断
-  if (streak >= 3) {
-    result += `<span class="warning">⚠️ 已连续 ${streak} 次，风险上升，建议暂停</span><br>`;
+  const last = data[data.length - 1];
+
+  document.getElementById("result").innerHTML = `
+    总局数：<span class="big">${total}</span><br><br>
+
+    ≥5x 次数：${hit5} 次<br>
+    ≥5x 概率：${(prob5 * 100).toFixed(2)}%<br>
+    平均约每 <span class="good">${avgWait5}</span> 局出现一次 ≥5x<br><br>
+
+    ≥10x 次数：${hit10} 次<br>
+    ≥10x 概率：${(prob10 * 100).toFixed(2)}%<br>
+    平均约每 <span class="warn">${avgWait10}</span> 局出现一次 ≥10x<br><br>
+
+    当前最后倍率：${last}x<br>
+    连续未出 ≥5x：${miss5} 局<br>
+    连续未出 ≥10x：${miss10} 局
+  `;
+
+  let riskText = "";
+
+  if (miss10 >= 20) {
+    riskText += `<p class="danger">⚠️ 已连续 ${miss10} 局未出 ≥10x。不要冲动加注，容易追高。</p>`;
+  } else if (miss10 >= 10) {
+    riskText += `<p class="warn">🟡 已连续 ${miss10} 局未出 ≥10x，可以观察，但不要重仓。</p>`;
   } else {
-    result += `<span class="safe">✅ 正常范围</span><br>`;
+    riskText += `<p class="good">🟢 ≥10x 间隔还在正常范围。</p>`;
   }
 
-  // 🔥 热门
-  let maxKey = Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b);
-  result += `<br>🔥 热门值: ${maxKey}`;
-
-  // 🔥 冷门
-  let minKey = Object.keys(count).reduce((a, b) => count[a] < count[b] ? a : b);
-  result += `<br>❄️ 冷门值: ${minKey}`;
-
-  // 🔥 简单建议
-  if (streak >= 4) {
-    result += `<br><span class="warning">👉 强烈建议暂停或减注</span>`;
-  } else if (streak === 1) {
-    result += `<br><span class="safe">👉 可观察下一局</span>`;
+  if (miss5 >= 10) {
+    riskText += `<p class="danger">⚠️ 已连续 ${miss5} 局未出 ≥5x，波动偏低，建议小注或暂停。</p>`;
+  } else if (miss5 >= 5) {
+    riskText += `<p class="warn">🟡 ≥5x 已经 ${miss5} 局没出，可观察下一轮，但不要倍投。</p>`;
+  } else {
+    riskText += `<p class="good">🟢 ≥5x 出现节奏正常。</p>`;
   }
 
-  document.getElementById("analysis").innerHTML = result;
+  riskText += `
+    <hr>
+    <b>资金规则：</b><br>
+    1. 单局下注不要超过本金 1% - 2%。<br>
+    2. 连续输 5 局，暂停 10 分钟。<br>
+    3. 达到目标盈利，直接停止。<br>
+    4. 不要因为“很久没出”就加大下注。
+  `;
+
+  document.getElementById("risk").innerHTML = riskText;
 }
-
-render();
 </script>
 
 </body>
