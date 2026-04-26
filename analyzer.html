@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash 风险分析系统</title>
+<title>Crash 自动数据分析系统</title>
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -12,19 +13,14 @@ body {
   margin:0;
   padding:16px;
 }
+
 .card {
   background:#111827;
   border-radius:14px;
   padding:16px;
   margin-bottom:14px;
 }
-textarea {
-  width:100%;
-  height:160px;
-  border-radius:12px;
-  padding:10px;
-  font-size:15px;
-}
+
 button {
   background:#22c55e;
   color:#000;
@@ -33,50 +29,80 @@ button {
   border-radius:10px;
   font-weight:bold;
   cursor:pointer;
-  margin-top:10px;
 }
+
 .good { color:#22c55e; }
 .warn { color:#facc15; }
 .danger { color:#ef4444; }
-.big { font-size:22px; font-weight:bold; }
+.big { font-size:24px; font-weight:bold; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+td, th {
+  border-bottom:1px solid #374151;
+  padding:8px;
+  text-align:left;
+}
 </style>
 </head>
 
 <body>
 
-<h2>📊 Crash 风险分析系统</h2>
+<h2>📊 Crash 自动数据分析系统</h2>
 
 <div class="card">
-  <p>把 Google Sheet 里的倍率复制进来，例如：</p>
-  <p>1.03, 2.15, 6.06, 1.00, 10.61</p>
-  <textarea id="inputData" placeholder="输入倍率数据，用逗号或换行分开"></textarea>
-  <button onclick="analyze()">开始分析</button>
+  <button onclick="loadSheetData()">🔄 读取 Google Sheet 数据</button>
+  <p id="status">等待读取数据...</p>
 </div>
 
 <div class="card">
-  <h3>📈 统计结果</h3>
-  <div id="result">等待输入数据...</div>
+  <h3>📈 核心统计</h3>
+  <div id="result">暂无数据</div>
 </div>
 
 <div class="card">
-  <h3>⚠️ 风险管理建议</h3>
-  <div id="risk">等待分析...</div>
+  <h3>⚠️ 风险管理</h3>
+  <div id="risk">暂无分析</div>
+</div>
+
+<div class="card">
+  <h3>📋 最近 30 局</h3>
+  <div id="recent"></div>
 </div>
 
 <script>
-function analyze() {
-  const raw = document.getElementById("inputData").value;
+const API_URL = "https://script.google.com/macros/s/AKfycbz_0pObseWT3sv8pKmkwV3I4S2X0iWuoP3jX_w8JYlBJ0Xcxp-ln0G3xs__TXa5bg3Xmg/exec";
 
-  const data = raw
-    .split(/[\s,，]+/)
-    .map(Number)
-    .filter(v => !isNaN(v) && v >= 1);
+async function loadSheetData() {
+  document.getElementById("status").innerHTML = "正在读取 Google Sheet...";
 
-  if (data.length === 0) {
-    document.getElementById("result").innerHTML = "没有有效数据";
-    return;
+  try {
+    const res = await fetch(API_URL);
+    const rows = await res.json();
+
+    const data = rows
+      .map(r => Number(r.value))
+      .filter(v => !isNaN(v) && v >= 1);
+
+    if (data.length === 0) {
+      document.getElementById("status").innerHTML = "没有读取到有效倍率数据";
+      return;
+    }
+
+    document.getElementById("status").innerHTML = `✅ 成功读取 ${data.length} 条数据`;
+    analyzeData(data);
+
+  } catch (err) {
+    document.getElementById("status").innerHTML = "❌ 读取失败，请检查 Apps Script 是否部署为任何人可访问";
+    console.error(err);
   }
+}
 
+function analyzeData(data) {
   const total = data.length;
 
   const hit5 = data.filter(v => v >= 5).length;
@@ -101,53 +127,115 @@ function analyze() {
     else break;
   }
 
+  const under2 = data.filter(v => v < 2).length;
+  const between2to5 = data.filter(v => v >= 2 && v < 5).length;
+  const between5to10 = data.filter(v => v >= 5 && v < 10).length;
+  const over10 = data.filter(v => v >= 10).length;
+
   const last = data[data.length - 1];
 
   document.getElementById("result").innerHTML = `
     总局数：<span class="big">${total}</span><br><br>
 
+    最后一局倍率：<span class="big">${last}x</span><br><br>
+
     ≥5x 次数：${hit5} 次<br>
-    ≥5x 概率：${(prob5 * 100).toFixed(2)}%<br>
+    ≥5x 概率：<span class="good">${(prob5 * 100).toFixed(2)}%</span><br>
     平均约每 <span class="good">${avgWait5}</span> 局出现一次 ≥5x<br><br>
 
     ≥10x 次数：${hit10} 次<br>
-    ≥10x 概率：${(prob10 * 100).toFixed(2)}%<br>
+    ≥10x 概率：<span class="warn">${(prob10 * 100).toFixed(2)}%</span><br>
     平均约每 <span class="warn">${avgWait10}</span> 局出现一次 ≥10x<br><br>
 
-    当前最后倍率：${last}x<br>
     连续未出 ≥5x：${miss5} 局<br>
-    连续未出 ≥10x：${miss10} 局
-  `;
+    连续未出 ≥10x：${miss10} 局<br><br>
 
-  let riskText = "";
-
-  if (miss10 >= 20) {
-    riskText += `<p class="danger">⚠️ 已连续 ${miss10} 局未出 ≥10x。不要冲动加注，容易追高。</p>`;
-  } else if (miss10 >= 10) {
-    riskText += `<p class="warn">🟡 已连续 ${miss10} 局未出 ≥10x，可以观察，但不要重仓。</p>`;
-  } else {
-    riskText += `<p class="good">🟢 ≥10x 间隔还在正常范围。</p>`;
-  }
-
-  if (miss5 >= 10) {
-    riskText += `<p class="danger">⚠️ 已连续 ${miss5} 局未出 ≥5x，波动偏低，建议小注或暂停。</p>`;
-  } else if (miss5 >= 5) {
-    riskText += `<p class="warn">🟡 ≥5x 已经 ${miss5} 局没出，可观察下一轮，但不要倍投。</p>`;
-  } else {
-    riskText += `<p class="good">🟢 ≥5x 出现节奏正常。</p>`;
-  }
-
-  riskText += `
     <hr>
-    <b>资金规则：</b><br>
-    1. 单局下注不要超过本金 1% - 2%。<br>
-    2. 连续输 5 局，暂停 10 分钟。<br>
-    3. 达到目标盈利，直接停止。<br>
-    4. 不要因为“很久没出”就加大下注。
+    <b>倍率分布：</b><br>
+    &lt;2x：${under2} 次 (${((under2 / total) * 100).toFixed(2)}%)<br>
+    2x - 5x：${between2to5} 次 (${((between2to5 / total) * 100).toFixed(2)}%)<br>
+    5x - 10x：${between5to10} 次 (${((between5to10 / total) * 100).toFixed(2)}%)<br>
+    ≥10x：${over10} 次 (${((over10 / total) * 100).toFixed(2)}%)
   `;
 
-  document.getElementById("risk").innerHTML = riskText;
+  riskAnalyze(miss5, miss10, prob5, prob10);
+  showRecent(data);
 }
+
+function riskAnalyze(miss5, miss10, prob5, prob10) {
+  let html = "";
+
+  if (miss10 >= 25) {
+    html += `<p class="danger">🔴 ≥10x 已经 ${miss10} 局没出。不要重仓追，容易被连续低倍吃掉。</p>`;
+  } else if (miss10 >= 12) {
+    html += `<p class="warn">🟡 ≥10x 已经 ${miss10} 局没出，可以观察，但只适合小注。</p>`;
+  } else {
+    html += `<p class="good">🟢 ≥10x 间隔目前正常。</p>`;
+  }
+
+  if (miss5 >= 12) {
+    html += `<p class="danger">🔴 ≥5x 已经 ${miss5} 局没出，当前波动偏低，建议暂停或极小注。</p>`;
+  } else if (miss5 >= 6) {
+    html += `<p class="warn">🟡 ≥5x 已经 ${miss5} 局没出，可观察下一轮，但不要倍投。</p>`;
+  } else {
+    html += `<p class="good">🟢 ≥5x 节奏正常。</p>`;
+  }
+
+  html += `
+    <hr>
+    <b>资金管理规则：</b><br>
+    1. 单局下注不要超过本金 1% - 2%。<br>
+    2. 连续亏 5 局，暂停 10 分钟。<br>
+    3. 达到目标盈利，直接停止。<br>
+    4. 不要因为“很久没出”就加注。<br>
+    5. 这个系统只能做统计，不能保证预测下一局。
+  `;
+
+  document.getElementById("risk").innerHTML = html;
+}
+
+function showRecent(data) {
+  const recent = data.slice(-30).reverse();
+
+  let html = `
+    <table>
+      <tr>
+        <th>#</th>
+        <th>倍率</th>
+        <th>分类</th>
+      </tr>
+  `;
+
+  recent.forEach((v, i) => {
+    let type = "";
+    let cls = "";
+
+    if (v >= 10) {
+      type = "≥10x 大倍";
+      cls = "warn";
+    } else if (v >= 5) {
+      type = "≥5x 中大倍";
+      cls = "good";
+    } else {
+      type = "<5x 未达标";
+      cls = "";
+    }
+
+    html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${v}x</td>
+        <td class="${cls}">${type}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  document.getElementById("recent").innerHTML = html;
+}
+
+window.onload = loadSheetData;
 </script>
 
 </body>
