@@ -4,7 +4,1068 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>跳飞机云端策略分析系统 V4</title>
+<title>跳飞机云端策略分析系统 V<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>跳飞机云端策略分析系统 V5</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 12px;
+  background: #07111f;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+h1, h2, h3 { margin: 8px 0; }
+
+.card {
+  background: #111827;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.25);
+}
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+input {
+  background: #1f2937;
+  color: white;
+}
+
+button {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-main {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.btn-blue {
+  background: #3b82f6;
+  color: white;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  background: #1f2937;
+  padding: 10px;
+  border-radius: 12px;
+  margin: 8px 0;
+}
+
+.big {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.green { color: #4ade80; }
+.red { color: #f87171; }
+.gold { color: #facc15; }
+.purple { color: #c084fc; }
+.blue { color: #60a5fa; }
+.gray { color: #9ca3af; }
+
+.safe {
+  border: 1px solid #22c55e;
+  background: #052e16;
+}
+
+.warning {
+  border: 1px solid #facc15;
+  background: #451a03;
+}
+
+.danger {
+  border: 1px solid #ef4444;
+  background: #450a0a;
+}
+
+.row {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.log {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.badge-blue { background: #1d4ed8; }
+.badge-purple { background: #7e22ce; }
+.badge-red { background: #dc2626; }
+.badge-half { background: #a16207; }
+</style>
+</head>
+
+<body>
+
+<h1>跳飞机云端策略分析系统 V5</h1>
+
+<div class="card">
+  <h2>当前答案</h2>
+  <div id="answerBox" class="stat big gold">正在读取线上数据...</div>
+  <div id="reasonBox" class="stat">等待分析原因...</div>
+</div>
+
+<div class="card">
+  <h2>手动上传倍率</h2>
+  <input id="manualMultiplier" type="number" step="0.01" placeholder="例如：1.25 / 5 / 10">
+  <button class="btn-main" onclick="uploadManual()">上传这一局</button>
+  <button class="btn-blue" onclick="loadData()">刷新分析</button>
+</div>
+
+<div class="card">
+  <h2>核心规则</h2>
+  <div class="stat">Full TP = 10x 或以上。只有 Full TP 才重置等待。</div>
+  <div class="stat">Half TP = 5x 或以上，但 Half TP 不重置。</div>
+  <div class="stat">Full TP 出现后等待 7 局，第 8 局才允许第一阶段观察。</div>
+  <div class="stat">
+    五种模式：
+    A 紫紫红 /
+    B 紫紫蓝蓝红 /
+    C 紫紫蓝紫红 /
+    D 紫紫紫蓝紫紫蓝紫红 /
+    E 紫紫蓝紫紫紫蓝红
+  </div>
+</div>
+
+<div class="card">
+  <h2>AI 下一局 10x 参考概率</h2>
+
+  <div class="grid">
+    <div class="stat">
+      AI参考概率
+      <div id="aiChance" class="big gold">0%</div>
+    </div>
+
+    <div class="stat">
+      信号强度
+      <div id="aiLevel" class="big">等待</div>
+    </div>
+  </div>
+
+  <div class="stat">建议：<span id="aiSuggestion">等待数据</span></div>
+  <div class="stat">原因：<span id="aiReason">暂无分析</span></div>
+  <div class="stat">最近30局 Full TP：<span id="recent30Rate">0%</span></div>
+  <div class="stat">最近100局 Full TP：<span id="recent100Rate">0%</span></div>
+</div>
+
+<div class="card">
+  <h2>策略状态</h2>
+
+  <div class="grid">
+    <div class="stat">
+      总局数
+      <div id="totalRounds" class="big">0</div>
+    </div>
+
+    <div class="stat">
+      Full TP 次数
+      <div id="fullCount" class="big red">0</div>
+    </div>
+
+    <div class="stat">
+      Half TP 次数
+      <div id="halfCount" class="big gold">0</div>
+    </div>
+
+    <div class="stat">
+      蓝色次数
+      <div id="blueCount" class="big blue">0</div>
+    </div>
+
+    <div class="stat">
+      Full TP 概率
+      <div id="fullRate" class="big">0%</div>
+    </div>
+
+    <div class="stat">
+      Half TP 概率
+      <div id="halfRate" class="big">0%</div>
+    </div>
+  </div>
+
+  <div class="stat">距离上一次 Full TP：<span id="sinceFull">0</span> 局</div>
+  <div class="stat">连续蓝色：<span id="blueStreak">0</span></div>
+  <div class="stat">连续紫色：<span id="purpleStreak">0</span></div>
+  <div class="stat">当前阶段：<span id="phaseText">读取中</span></div>
+  <div class="stat">当前尾部形态：<span id="tailPattern">读取中</span></div>
+</div>
+
+<div class="card">
+  <h2>紫色模式历史统计</h2>
+
+  <div class="stat">
+    <h3>模式 A：紫 紫 红</h3>
+    <div>出现机会：<span id="patternAChance">0</span></div>
+    <div>成功次数：<span id="patternASuccess">0</span></div>
+    <div>成功率：<span id="patternARate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 B：紫 紫 蓝 蓝 红</h3>
+    <div>出现机会：<span id="patternBChance">0</span></div>
+    <div>成功次数：<span id="patternBSuccess">0</span></div>
+    <div>成功率：<span id="patternBRate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 C：紫 紫 蓝 紫 红</h3>
+    <div>出现机会：<span id="patternCChance">0</span></div>
+    <div>成功次数：<span id="patternCSuccess">0</span></div>
+    <div>成功率：<span id="patternCRate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 D：紫 紫 紫 蓝 紫 紫 蓝 紫 红</h3>
+    <div>出现机会：<span id="patternDChance">0</span></div>
+    <div>成功次数：<span id="patternDSuccess">0</span></div>
+    <div>成功率：<span id="patternDRate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 E：紫 紫 蓝 紫 紫 紫 蓝 红</h3>
+    <div>出现机会：<span id="patternEChance">0</span></div>
+    <div>成功次数：<span id="patternESuccess">0</span></div>
+    <div>成功率：<span id="patternERate">0%</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>AI 分析报告</h2>
+  <div id="analysisBox" class="stat">正在分析...</div>
+</div>
+
+<div class="card">
+  <h2>最近 30 局</h2>
+  <div id="historyBox" class="log"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbw0KU008GPEvr2GEactDTtDb9nIAU6HB_vz3QbuzxT-_Gwo1061cYk5uOQtyHvefHaqOQ/exec";
+
+let rows = [];
+
+async function uploadManual() {
+  const input = document.getElementById("manualMultiplier");
+  const multiplier = Number(input.value);
+
+  if (!multiplier || multiplier <= 0) {
+    alert("请输入正确倍率");
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        multiplier: multiplier,
+        source: "github_manual"
+      })
+    });
+
+    const text = await res.text();
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      alert("上传失败：API 没有返回 JSON。\n\n返回内容：\n" + text.slice(0, 300));
+      return;
+    }
+
+    if (!result.success) {
+      alert("上传失败：" + (result.message || "未知错误"));
+      return;
+    }
+
+    input.value = "";
+    await loadData();
+
+  } catch (err) {
+    alert("上传错误：" + err.message);
+  }
+}
+
+async function loadData() {
+  try {
+    const res = await fetch(API_URL);
+    const text = await res.text();
+
+    console.log("API 返回内容：", text);
+
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      document.getElementById("answerBox").innerText = "API 返回的不是 JSON";
+      document.getElementById("answerBox").className = "stat big danger";
+      document.getElementById("reasonBox").innerText =
+        "Apps Script 返回了 HTML，不是 JSON。请检查 Web App 部署权限。";
+      document.getElementById("analysisBox").innerText =
+        "返回内容开头：" + text.slice(0, 200);
+      document.getElementById("analysisBox").className = "stat danger";
+      return;
+    }
+
+    if (!result.success) {
+      document.getElementById("answerBox").innerText = "读取失败";
+      document.getElementById("answerBox").className = "stat big danger";
+      document.getElementById("reasonBox").innerText = result.message || "API 返回 success:false";
+      document.getElementById("analysisBox").innerText = result.message || "API 返回 success:false";
+      document.getElementById("analysisBox").className = "stat danger";
+      return;
+    }
+
+    rows = (result.data || []).map(r => ({
+      time: r.time || "",
+      multiplier: Number(r.multiplier || r.value || 0)
+    })).filter(r => r.multiplier > 0);
+
+    analyze();
+
+  } catch (err) {
+    document.getElementById("answerBox").innerText = "读取错误";
+    document.getElementById("answerBox").className = "stat big danger";
+    document.getElementById("reasonBox").innerText = err.message;
+    document.getElementById("analysisBox").innerText = err.message;
+    document.getElementById("analysisBox").className = "stat danger";
+  }
+}
+
+function getSymbol(multiplier) {
+  if (multiplier >= 10) return "F";
+  if (multiplier >= 2) return "P";
+  return "B";
+}
+
+function getColor(multiplier) {
+  if (multiplier >= 10) return "full";
+  if (multiplier >= 2) return "purple";
+  return "blue";
+}
+
+function analyze() {
+  const total = rows.length;
+
+  let fullCount = 0;
+  let halfCount = 0;
+  let blueCount = 0;
+  let purpleCount = 0;
+
+  let sinceFull = 999;
+  let blueStreak = 0;
+  let purpleStreak = 0;
+
+  const symbols = rows.map(r => getSymbol(r.multiplier));
+
+  for (let i = 0; i < rows.length; i++) {
+    const m = rows[i].multiplier;
+    const symbol = getSymbol(m);
+
+    if (m >= 10) {
+      fullCount++;
+      sinceFull = 0;
+      blueStreak = 0;
+      purpleStreak = 0;
+    } else {
+      sinceFull++;
+
+      if (m >= 5) halfCount++;
+
+      if (symbol === "B") {
+        blueCount++;
+        blueStreak++;
+        purpleStreak = 0;
+      } else if (symbol === "P") {
+        purpleCount++;
+        purpleStreak++;
+        blueStreak = 0;
+      }
+    }
+  }
+
+  const fullRate = total > 0 ? ((fullCount / total) * 100).toFixed(2) : "0.00";
+  const halfRate = total > 0 ? ((halfCount / total) * 100).toFixed(2) : "0.00";
+
+  const patternStats = getPatternStats(symbols);
+  const tail = getTailPattern(symbols);
+
+  const aiChance = getAIChance({
+    rows,
+    symbols,
+    fullRate,
+    sinceFull,
+    patternStats,
+    tail
+  });
+
+  const answer = getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats);
+  const analysis = getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStreak, patternStats, tail, aiChance);
+
+  document.getElementById("totalRounds").innerText = total;
+  document.getElementById("fullCount").innerText = fullCount;
+  document.getElementById("halfCount").innerText = halfCount;
+  document.getElementById("blueCount").innerText = blueCount;
+  document.getElementById("fullRate").innerText = fullRate + "%";
+  document.getElementById("halfRate").innerText = halfRate + "%";
+
+  document.getElementById("sinceFull").innerText = sinceFull >= 999 ? "还没有出现" : sinceFull;
+  document.getElementById("blueStreak").innerText = blueStreak;
+  document.getElementById("purpleStreak").innerText = purpleStreak;
+  document.getElementById("phaseText").innerText = answer.phase;
+  document.getElementById("tailPattern").innerText = tail.text;
+
+  document.getElementById("aiChance").innerText = aiChance.chance.toFixed(2) + "%";
+  document.getElementById("aiLevel").innerText = aiChance.level;
+  document.getElementById("aiSuggestion").innerText = aiChance.suggestion;
+  document.getElementById("aiReason").innerText = aiChance.reason;
+  document.getElementById("recent30Rate").innerText = aiChance.recent30Rate.toFixed(2) + "%";
+  document.getElementById("recent100Rate").innerText = aiChance.recent100Rate.toFixed(2) + "%";
+
+  document.getElementById("aiChance").className = "big " + aiChance.className;
+  document.getElementById("aiLevel").className = "big " + aiChance.className;
+
+  document.getElementById("patternAChance").innerText = patternStats.A.chance;
+  document.getElementById("patternASuccess").innerText = patternStats.A.success;
+  document.getElementById("patternARate").innerText = patternStats.A.rate + "%";
+
+  document.getElementById("patternBChance").innerText = patternStats.B.chance;
+  document.getElementById("patternBSuccess").innerText = patternStats.B.success;
+  document.getElementById("patternBRate").innerText = patternStats.B.rate + "%";
+
+  document.getElementById("patternCChance").innerText = patternStats.C.chance;
+  document.getElementById("patternCSuccess").innerText = patternStats.C.success;
+  document.getElementById("patternCRate").innerText = patternStats.C.rate + "%";
+
+  document.getElementById("patternDChance").innerText = patternStats.D.chance;
+  document.getElementById("patternDSuccess").innerText = patternStats.D.success;
+  document.getElementById("patternDRate").innerText = patternStats.D.rate + "%";
+
+  document.getElementById("patternEChance").innerText = patternStats.E.chance;
+  document.getElementById("patternESuccess").innerText = patternStats.E.success;
+  document.getElementById("patternERate").innerText = patternStats.E.rate + "%";
+
+  const answerBox = document.getElementById("answerBox");
+  answerBox.innerText = answer.text;
+  answerBox.className = "stat big " + answer.className;
+
+  const reasonBox = document.getElementById("reasonBox");
+  reasonBox.innerText = answer.reason;
+  reasonBox.className = "stat " + answer.className;
+
+  const analysisBox = document.getElementById("analysisBox");
+  analysisBox.innerText = analysis.text;
+  analysisBox.className = "stat " + analysis.className;
+
+  renderHistory();
+}
+
+function getPatternStats(symbols) {
+  const stats = {
+    A: { chance: 0, success: 0, rate: "0.00" },
+    B: { chance: 0, success: 0, rate: "0.00" },
+    C: { chance: 0, success: 0, rate: "0.00" },
+    D: { chance: 0, success: 0, rate: "0.00" },
+    E: { chance: 0, success: 0, rate: "0.00" }
+  };
+
+  function countPattern(key, prefix, finalSymbol) {
+    const totalLen = prefix.length + 1;
+
+    for (let i = 0; i <= symbols.length - totalLen; i++) {
+      let matched = true;
+
+      for (let j = 0; j < prefix.length; j++) {
+        if (symbols[i + j] !== prefix[j]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        stats[key].chance++;
+
+        if (symbols[i + prefix.length] === finalSymbol) {
+          stats[key].success++;
+        }
+      }
+    }
+  }
+
+  countPattern("A", ["P", "P"], "F");
+  countPattern("B", ["P", "P", "B", "B"], "F");
+  countPattern("C", ["P", "P", "B", "P"], "F");
+  countPattern("D", ["P", "P", "P", "B", "P", "P", "B", "P"], "F");
+  countPattern("E", ["P", "P", "B", "P", "P", "P", "B"], "F");
+
+  ["A", "B", "C", "D", "E"].forEach(key => {
+    if (stats[key].chance > 0) {
+      stats[key].rate = ((stats[key].success / stats[key].chance) * 100).toFixed(2);
+    }
+  });
+
+  return stats;
+}
+
+function getTailPattern(symbols) {
+  const tail9 = symbols.slice(-9).join("");
+  const tail8 = symbols.slice(-8).join("");
+  const tail7 = symbols.slice(-7).join("");
+  const tail5 = symbols.slice(-5).join("");
+  const tail4 = symbols.slice(-4).join("");
+  const tail3 = symbols.slice(-3).join("");
+  const tail2 = symbols.slice(-2).join("");
+
+  if (tail9 === "PPPBPBPF") {
+    return {
+      code: "D_DONE",
+      text: "刚完成：紫 紫 紫 蓝 紫 紫 蓝 紫 红，模式 D 成功"
+    };
+  }
+
+  if (tail8 === "PPBPPPBF") {
+    return {
+      code: "E_DONE",
+      text: "刚完成：紫 紫 蓝 紫 紫 紫 蓝 红，模式 E 成功"
+    };
+  }
+
+  if (tail5 === "PPBBF") {
+    return {
+      code: "B_DONE",
+      text: "刚完成：紫 紫 蓝 蓝 红，模式 B 成功"
+    };
+  }
+
+  if (tail5 === "PPBPF") {
+    return {
+      code: "C_DONE",
+      text: "刚完成：紫 紫 蓝 紫 红，模式 C 成功"
+    };
+  }
+
+  if (tail3 === "PPF") {
+    return {
+      code: "A_DONE",
+      text: "刚完成：紫 紫 红，模式 A 成功"
+    };
+  }
+
+  if (tail8 === "PPPBPBP") {
+    return {
+      code: "D_READY",
+      text: "当前尾部：紫 紫 紫 蓝 紫 紫 蓝 紫，下一局如果红 = 模式 D 成功"
+    };
+  }
+
+  if (tail7 === "PPBPPPB") {
+    return {
+      code: "E_READY",
+      text: "当前尾部：紫 紫 蓝 紫 紫 紫 蓝，下一局如果红 = 模式 E 成功"
+    };
+  }
+
+  if (tail4 === "PPBB") {
+    return {
+      code: "B_READY",
+      text: "当前尾部：紫 紫 蓝 蓝，下一局如果红 = 模式 B 成功"
+    };
+  }
+
+  if (tail4 === "PPBP") {
+    return {
+      code: "C_READY",
+      text: "当前尾部：紫 紫 蓝 紫，下一局如果红 = 模式 C 成功"
+    };
+  }
+
+  if (tail3 === "PPB") {
+    return {
+      code: "BC_WAIT",
+      text: "当前尾部：紫 紫 蓝，继续观察会不会走 B / C / E"
+    };
+  }
+
+  if (tail2 === "PP") {
+    return {
+      code: "A_READY",
+      text: "当前尾部：紫 紫，下一局如果红 = 模式 A 成功"
+    };
+  }
+
+  return {
+    code: "",
+    text: "当前没有明显紫色模式"
+  };
+}
+
+function getAIChance(ctx) {
+  const {
+    rows,
+    fullRate,
+    sinceFull,
+    patternStats,
+    tail
+  } = ctx;
+
+  const total = rows.length;
+
+  if (total === 0) {
+    return {
+      chance: 0,
+      level: "无数据",
+      suggestion: "先等待数据",
+      reason: "目前没有任何倍率记录，无法计算参考概率。",
+      recent30Rate: 0,
+      recent100Rate: 0,
+      className: "gray"
+    };
+  }
+
+  const overallRate = Number(fullRate) || 0;
+  const recent30Rate = getRecentFullRate(rows, 30);
+  const recent100Rate = getRecentFullRate(rows, 100);
+  const modeRate = getCurrentModeRate(tail, patternStats);
+
+  let chance =
+    overallRate * 0.40 +
+    recent100Rate * 0.25 +
+    recent30Rate * 0.15 +
+    modeRate * 0.20;
+
+  const waitBonus = getWaitBonus(sinceFull);
+  chance += waitBonus;
+
+  if (chance < 0) chance = 0;
+  if (chance > 60) chance = 60;
+
+  let level = "低关注";
+  let suggestion = "不急，继续观察";
+  let className = "gray";
+
+  if (chance >= 25) {
+    level = "极高关注";
+    suggestion = "进入强信号区，但不要加倍追单";
+    className = "red";
+  } else if (chance >= 18) {
+    level = "高关注";
+    suggestion = "可以高关注下一局，但仍然只按规则操作";
+    className = "gold";
+  } else if (chance >= 12) {
+    level = "中关注";
+    suggestion = "可以观察，不建议重注";
+    className = "purple";
+  } else if (chance >= 8) {
+    level = "普通观察";
+    suggestion = "信号一般，等待更明确模式";
+    className = "blue";
+  }
+
+  const reasonParts = [];
+
+  reasonParts.push("总体 Full TP 概率 " + overallRate.toFixed(2) + "%");
+  reasonParts.push("最近30局 " + recent30Rate.toFixed(2) + "%");
+  reasonParts.push("最近100局 " + recent100Rate.toFixed(2) + "%");
+
+  if (modeRate > 0) {
+    reasonParts.push("当前模式历史成功率 " + modeRate.toFixed(2) + "%");
+  } else {
+    reasonParts.push("当前没有明显模式加分");
+  }
+
+  if (sinceFull === 999) {
+    reasonParts.push("还没有出现过 Full TP");
+  } else {
+    reasonParts.push("距离上次 Full TP 已经 " + sinceFull + " 局");
+  }
+
+  if (waitBonus > 0) {
+    reasonParts.push("等待局数加分 +" + waitBonus.toFixed(2) + "%");
+  } else if (waitBonus < 0) {
+    reasonParts.push("等待局数扣分 " + waitBonus.toFixed(2) + "%");
+  }
+
+  return {
+    chance,
+    level,
+    suggestion,
+    reason: reasonParts.join("；"),
+    recent30Rate,
+    recent100Rate,
+    className
+  };
+}
+
+function getRecentFullRate(rows, count) {
+  if (!rows || rows.length === 0) return 0;
+
+  const recent = rows.slice(-count);
+
+  if (recent.length === 0) return 0;
+
+  const fullHits = recent.filter(r => Number(r.multiplier) >= 10).length;
+
+  return (fullHits / recent.length) * 100;
+}
+
+function getCurrentModeRate(tail, patternStats) {
+  if (!tail || !tail.code) return 0;
+
+  if (tail.code === "A_READY" || tail.code === "A_DONE") {
+    return Number(patternStats.A.rate) || 0;
+  }
+
+  if (tail.code === "B_READY" || tail.code === "B_DONE") {
+    return Number(patternStats.B.rate) || 0;
+  }
+
+  if (tail.code === "C_READY" || tail.code === "C_DONE") {
+    return Number(patternStats.C.rate) || 0;
+  }
+
+  if (tail.code === "D_READY" || tail.code === "D_DONE") {
+    return Number(patternStats.D.rate) || 0;
+  }
+
+  if (tail.code === "E_READY" || tail.code === "E_DONE") {
+    return Number(patternStats.E.rate) || 0;
+  }
+
+  if (tail.code === "BC_WAIT") {
+    const b = Number(patternStats.B.rate) || 0;
+    const c = Number(patternStats.C.rate) || 0;
+    const e = Number(patternStats.E.rate) || 0;
+    return Math.max(b, c, e) * 0.5;
+  }
+
+  return 0;
+}
+
+function getWaitBonus(sinceFull) {
+  if (sinceFull === 999) return -3;
+
+  if (sinceFull <= 6) return -5;
+  if (sinceFull >= 7 && sinceFull <= 12) return 1;
+  if (sinceFull >= 13 && sinceFull <= 17) return 2;
+  if (sinceFull >= 18 && sinceFull <= 20) return 4;
+  if (sinceFull > 20) return -2;
+
+  return 0;
+}
+
+function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
+  const tail = getTailPattern(symbols);
+
+  if (symbols.length === 0) {
+    return {
+      text: "暂无数据，先观察",
+      reason: "Google Sheet 目前没有可分析倍率。",
+      className: "warning",
+      phase: "无数据"
+    };
+  }
+
+  if (sinceFull === 999) {
+    return {
+      text: "还没有 Full TP，先观察，不下",
+      reason: "系统还没看到 10x 以上，所以不能开始 7 局等待规则。",
+      className: "warning",
+      phase: "等待第一个 Full TP"
+    };
+  }
+
+  if (sinceFull < 7) {
+    return {
+      text: `等待，不下。Full TP 后还差 ${7 - sinceFull} 局`,
+      reason: "第一阶段规则：10x 出现后必须等满 7 局。5x Half TP 不算重置。",
+      className: "warning",
+      phase: "等待 7 局"
+    };
+  }
+
+  if (tail.code === "D_READY") {
+    return {
+      text: "高关注：模式 D 已到临界点，下一局看红",
+      reason: `模式 D 历史：${patternStats.D.success}/${patternStats.D.chance}，成功率 ${patternStats.D.rate}%。当前形态：紫紫紫蓝紫紫蓝紫，下一局如果 10x+，模式 D 成功。`,
+      className: patternStats.D.chance >= 2 && Number(patternStats.D.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 D 等红"
+    };
+  }
+
+  if (tail.code === "E_READY") {
+    return {
+      text: "高关注：模式 E 已到临界点，下一局看红",
+      reason: `模式 E 历史：${patternStats.E.success}/${patternStats.E.chance}，成功率 ${patternStats.E.rate}%。当前形态：紫紫蓝紫紫紫蓝，下一局如果 10x+，模式 E 成功。`,
+      className: patternStats.E.chance >= 2 && Number(patternStats.E.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 E 等红"
+    };
+  }
+
+  if (tail.code === "B_READY") {
+    return {
+      text: "高关注：紫紫蓝蓝已出现，下一局看红",
+      reason: `模式 B 历史：${patternStats.B.success}/${patternStats.B.chance}，成功率 ${patternStats.B.rate}%。如果下一局出 10x+，模式 B 成功。`,
+      className: patternStats.B.chance >= 3 && Number(patternStats.B.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 B 等红"
+    };
+  }
+
+  if (tail.code === "C_READY") {
+    return {
+      text: "高关注：紫紫蓝紫已出现，下一局看红",
+      reason: `模式 C 历史：${patternStats.C.success}/${patternStats.C.chance}，成功率 ${patternStats.C.rate}%。如果下一局出 10x+，模式 C 成功。`,
+      className: patternStats.C.chance >= 3 && Number(patternStats.C.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 C 等红"
+    };
+  }
+
+  if (tail.code === "A_READY") {
+    return {
+      text: "观察确认：刚出现紫紫，下一局看是否红",
+      reason: `模式 A 历史：${patternStats.A.success}/${patternStats.A.chance}，成功率 ${patternStats.A.rate}%。如果下一局直接 10x+，模式 A 成功。`,
+      className: "warning",
+      phase: "模式 A 观察"
+    };
+  }
+
+  if (tail.code === "BC_WAIT") {
+    return {
+      text: "继续观察：紫紫蓝已出现",
+      reason: "现在可能走向模式 B：紫紫蓝蓝红，模式 C：紫紫蓝紫红，或模式 E：紫紫蓝紫紫紫蓝红。",
+      className: "warning",
+      phase: "B/C/E 前置观察"
+    };
+  }
+
+  if (tail.code === "A_DONE") {
+    return {
+      text: "模式 A 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "B_DONE") {
+    return {
+      text: "模式 B 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫蓝蓝红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "C_DONE") {
+    return {
+      text: "模式 C 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫蓝紫红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "D_DONE") {
+    return {
+      text: "模式 D 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫紫蓝紫紫蓝紫红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "E_DONE") {
+    return {
+      text: "模式 E 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫蓝紫紫紫蓝红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (blueStreak >= 10) {
+    if (sinceFull >= 18 && sinceFull <= 20) {
+      return {
+        text: "进入 18-20 局窗口，可以高关注",
+        reason: "连续蓝色过长，并且距离上一次 Full TP 已进入 18-20 局区间。",
+        className: "safe",
+        phase: "18-20 局窗口"
+      };
+    }
+
+    return {
+      text: "连续蓝色过长，不追，等 18-20 局",
+      reason: `当前连续蓝色 ${blueStreak} 局，距离 Full TP ${sinceFull} 局。未到 18-20 窗口，不追。`,
+      className: "danger",
+      phase: "蓝色过长等待"
+    };
+  }
+
+  if (sinceFull >= 7) {
+    return {
+      text: "已过 7 局，可以第 8 局规则观察",
+      reason: "第一阶段等待已经完成，但当前没有出现强模式信号。可以按规则观察，不要追。",
+      className: "safe",
+      phase: "第 8 局观察"
+    };
+  }
+
+  return {
+    text: "等待",
+    reason: "当前没有足够信号。",
+    className: "warning",
+    phase: "等待"
+  };
+}
+
+function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStreak, patternStats, tail, aiChance) {
+  if (total === 0) {
+    return {
+      text: "目前还没有数据。先确认 Google Sheet 正常写入。",
+      className: "warning"
+    };
+  }
+
+  if (total < 30) {
+    return {
+      text: "数据少于 30 局，模式成功率参考价值还不高。继续记录，不要急着放大下注。",
+      className: "warning"
+    };
+  }
+
+  let bestMode = "A";
+  let bestRate = Number(patternStats.A.rate);
+
+  ["B", "C", "D", "E"].forEach(key => {
+    if (Number(patternStats[key].rate) > bestRate) {
+      bestMode = key;
+      bestRate = Number(patternStats[key].rate);
+    }
+  });
+
+  let text = `目前 Full TP 概率 ${fullRate}%，Half TP 概率 ${halfRate}%。`;
+  text += ` AI下一局10x参考概率 ${aiChance.chance.toFixed(2)}%，信号强度：${aiChance.level}。`;
+  text += ` 模式A ${patternStats.A.rate}%，模式B ${patternStats.B.rate}%，模式C ${patternStats.C.rate}%，模式D ${patternStats.D.rate}%，模式E ${patternStats.E.rate}%。`;
+
+  if (bestRate > 0) {
+    text += ` 当前历史上表现较好的模式是：模式 ${bestMode}。`;
+  } else {
+    text += " 目前五种紫色模式还没有明显成功记录。";
+  }
+
+  if (sinceFull > 20 && Number(fullRate) < 8) {
+    return {
+      text: text + " 已经超过 20 局没 Full TP，而且 Full TP 概率偏低，当前不适合激进。",
+      className: "danger"
+    };
+  }
+
+  if (["B_READY", "C_READY", "D_READY", "E_READY"].includes(tail.code)) {
+    return {
+      text: text + " 当前已经进入模式临界点，下一局很关键，但仍然不能加倍追。",
+      className: "safe"
+    };
+  }
+
+  if (tail.code === "A_READY") {
+    return {
+      text: text + " 当前刚出现紫紫，先等下一局确认，不要提前乱下。",
+      className: "warning"
+    };
+  }
+
+  return {
+    text: text + " 当前建议按规则观察：10x 后等 7 局，5x 不重置，五种紫色模式只作为辅助信号。",
+    className: "warning"
+  };
+}
+
+function renderHistory() {
+  const box = document.getElementById("historyBox");
+  box.innerHTML = "";
+
+  const recent = rows.slice(-30).reverse();
+
+  if (recent.length === 0) {
+    box.innerHTML = "<div class='gray'>暂无记录</div>";
+    return;
+  }
+
+  recent.forEach((r, index) => {
+    const color = getColor(r.multiplier);
+
+    let colorClass = "blue";
+    let badgeClass = "badge-blue";
+    let label = "蓝";
+
+    if (color === "purple") {
+      colorClass = "purple";
+      badgeClass = r.multiplier >= 5 ? "badge-half" : "badge-purple";
+      label = r.multiplier >= 5 ? "紫 / Half TP" : "紫";
+    }
+
+    if (color === "full") {
+      colorClass = "red";
+      badgeClass = "badge-red";
+      label = "红 / Full TP";
+    }
+
+    const div = document.createElement("div");
+    div.className = "row";
+    div.innerHTML = `
+      <div><b>#${rows.length - index}</b></div>
+      <div>时间：${r.time || "无"}</div>
+      <div>倍率：<span class="${colorClass}">${r.multiplier}x</span>
+        <span class="badge ${badgeClass}">${label}</span>
+      </div>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>4</title>
 
 <style>
 * { box-sizing: border-box; }
