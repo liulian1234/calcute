@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>跳飞机云端策略分析系统 V5</title>
+<title>跳飞机云端策略分析系统 V6</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -128,7 +128,7 @@ button {
 
 <body>
 
-<h1>跳飞机云端策略分析系统 V5</h1>
+<h1>跳飞机云端策略分析系统 V6</h1>
 
 <div class="card">
   <h2>当前答案</h2>
@@ -177,6 +177,40 @@ button {
   <div class="stat">原因：<span id="aiReason">暂无分析</span></div>
   <div class="stat">最近30局 Full TP：<span id="recent30Rate">0%</span></div>
   <div class="stat">最近100局 Full TP：<span id="recent100Rate">0%</span></div>
+</div>
+
+<div class="card">
+  <h2>最近10局规律推算</h2>
+
+  <div class="stat">
+    最近10局走势：
+    <div id="last10Trend" class="big">等待数据</div>
+  </div>
+
+  <div class="grid">
+    <div class="stat">
+      蓝色次数
+      <div id="last10Blue" class="big blue">0</div>
+    </div>
+
+    <div class="stat">
+      紫色次数
+      <div id="last10Purple" class="big purple">0</div>
+    </div>
+
+    <div class="stat">
+      Half TP 次数
+      <div id="last10Half" class="big gold">0</div>
+    </div>
+
+    <div class="stat">
+      Full TP 次数
+      <div id="last10Full" class="big red">0</div>
+    </div>
+  </div>
+
+  <div class="stat">短线判断：<span id="last10Status">等待数据</span></div>
+  <div class="stat">建议：<span id="last10Suggestion">等待数据</span></div>
 </div>
 
 <div class="card">
@@ -425,8 +459,10 @@ function analyze() {
     tail
   });
 
+  const last10 = getLast10Analysis(rows, sinceFull, tail);
+
   const answer = getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats);
-  const analysis = getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, aiChance);
+  const analysis = getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, aiChance, last10);
 
   document.getElementById("totalRounds").innerText = total;
   document.getElementById("fullCount").innerText = fullCount;
@@ -450,6 +486,17 @@ function analyze() {
 
   document.getElementById("aiChance").className = "big " + aiChance.className;
   document.getElementById("aiLevel").className = "big " + aiChance.className;
+
+  document.getElementById("last10Trend").innerText = last10.trendText;
+  document.getElementById("last10Blue").innerText = last10.blueCount;
+  document.getElementById("last10Purple").innerText = last10.purpleCount;
+  document.getElementById("last10Half").innerText = last10.halfCount;
+  document.getElementById("last10Full").innerText = last10.fullCount;
+  document.getElementById("last10Status").innerText = last10.status;
+  document.getElementById("last10Suggestion").innerText = last10.suggestion;
+
+  document.getElementById("last10Status").className = last10.className;
+  document.getElementById("last10Suggestion").className = last10.className;
 
   document.getElementById("patternAChance").innerText = patternStats.A.chance;
   document.getElementById("patternASuccess").innerText = patternStats.A.success;
@@ -587,6 +634,112 @@ function getTailPattern(symbols) {
   }
 
   return { code: "", text: "当前没有明显紫色模式" };
+}
+
+function getLast10Analysis(rows, sinceFull, tail) {
+  if (!rows || rows.length === 0) {
+    return {
+      trendText: "暂无数据",
+      blueCount: 0,
+      purpleCount: 0,
+      halfCount: 0,
+      fullCount: 0,
+      status: "无数据",
+      suggestion: "先等待系统记录数据",
+      className: "gray"
+    };
+  }
+
+  const recent = rows.slice(-10);
+
+  let blueCount = 0;
+  let purpleCount = 0;
+  let halfCount = 0;
+  let fullCount = 0;
+
+  const trend = recent.map(r => {
+    const m = Number(r.multiplier);
+
+    if (m >= 10) {
+      fullCount++;
+      return "红";
+    }
+
+    if (m >= 5) {
+      halfCount++;
+      purpleCount++;
+      return "半";
+    }
+
+    if (m >= 2) {
+      purpleCount++;
+      return "紫";
+    }
+
+    blueCount++;
+    return "蓝";
+  });
+
+  const trendText = trend.join(" ");
+
+  let status = "普通观察";
+  let suggestion = "继续观察，不要重注";
+  let className = "blue";
+
+  if (recent.length < 10) {
+    status = "数据不足";
+    suggestion = "最近数据少于10局，继续记录后再判断";
+    className = "gray";
+  } else if (fullCount >= 1) {
+    status = "刚出过 Full TP";
+    suggestion = "10x 最近10局内出现过，按规则重新等待7局，不追";
+    className = "warning";
+  } else if (halfCount === 0 && fullCount === 0) {
+    status = "短线偏冷";
+    suggestion = "最近10局没有5x和10x，不建议追，等模式确认";
+    className = "danger";
+  } else if (halfCount >= 2 && fullCount === 0) {
+    status = "短线有热度";
+    suggestion = "最近10局有多次5x，但还没10x，可以观察模式，不要加倍";
+    className = "gold";
+  } else if (purpleCount >= 5 && fullCount === 0) {
+    status = "紫色偏多";
+    suggestion = "最近10局紫色较多，观察是否形成 A/B/C/D/E 模式";
+    className = "purple";
+  } else if (blueCount >= 7 && fullCount === 0) {
+    status = "蓝色偏多";
+    suggestion = "蓝色偏多，不追；如果距离上次10x进入18-20局再高关注";
+    className = "warning";
+  }
+
+  if (blueCount >= 8 && sinceFull >= 18 && sinceFull <= 20) {
+    status = "18-20局高关注";
+    suggestion = "最近10局蓝色很多，并且距离上次10x进入18-20局窗口，可以高关注但不要加倍";
+    className = "gold";
+  }
+
+  if (tail && ["B_READY", "C_READY", "D_READY", "E_READY"].includes(tail.code)) {
+    status = "模式临界点";
+    suggestion = "当前已经进入模式临界点，下一局关键，但仍然只按规则观察";
+    className = "gold";
+  }
+
+  if (tail && tail.code === "A_READY") {
+    status = "紫紫观察";
+    suggestion = "刚出现紫紫，下一局看是否直接红；未确认前不要提前追";
+    className = "purple";
+  }
+
+  return {
+    trendText,
+    blueCount,
+    purpleCount,
+    halfCount,
+    fullCount,
+    status,
+    suggestion,
+    className
+  };
 }
 
 function getAIChance(ctx) {
@@ -851,7 +1004,7 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
   };
 }
 
-function getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, aiChance) {
+function getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, aiChance, last10) {
   if (total === 0) {
     return {
       text: "目前还没有数据。先确认 Google Sheet 正常写入。",
@@ -871,6 +1024,7 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, a
 
   let text = `目前 Full TP 概率 ${fullRate}%，Half TP 概率 ${halfRate}%。`;
   text += ` AI下一局10x参考概率 ${aiChance.chance.toFixed(2)}%，信号强度：${aiChance.level}。`;
+  text += ` 最近10局判断：${last10.status}。`;
   text += ` 模式A ${patternStats.A.rate}%，模式B ${patternStats.B.rate}%，模式C ${patternStats.C.rate}%，模式D ${patternStats.D.rate}%，模式E ${patternStats.E.rate}%。`;
 
   if (bestRate > 0) {
@@ -908,7 +1062,7 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, patternStats, tail, a
   }
 
   return {
-    text: text + " 当前建议按规则观察：10x 后等 7 局，5x 不重置，五种紫色模式只作为辅助信号。",
+    text: text + " 当前建议按规则观察：10x 后等 7 局，5x 不重置，最近10局只作为短线温度参考。",
     className: "warning"
   };
 }
