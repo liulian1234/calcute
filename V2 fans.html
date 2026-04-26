@@ -4,9 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>跳飞机云端策略分析</title>
+<title>跳飞机云端策略分析系统</title>
 
 <style>
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 12px;
@@ -15,21 +19,57 @@ body {
   font-family: Arial, sans-serif;
 }
 
+h1, h2 {
+  margin: 8px 0;
+}
+
 .card {
   background: #111827;
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 12px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.25);
+}
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+input {
+  background: #1f2937;
+  color: white;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: #22c55e;
   font-weight: bold;
-  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-main {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.btn-blue {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-red {
+  background: #ef4444;
+  color: white;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .stat {
@@ -71,69 +111,171 @@ button {
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.log {
+  max-height: 360px;
+  overflow-y: auto;
 }
 </style>
 </head>
 
 <body>
 
-<h1>跳飞机云端策略分析</h1>
-
-<div class="card">
-  <button onclick="loadData()">刷新分析</button>
-</div>
+<h1>跳飞机云端策略分析系统</h1>
 
 <div class="card">
   <h2>当前答案</h2>
-  <div id="answerBox" class="stat big gold">等待数据</div>
+  <div id="answerBox" class="stat big gold">正在读取线上数据...</div>
+</div>
+
+<div class="card">
+  <h2>手动上传倍率</h2>
+  <input id="manualMultiplier" type="number" step="0.01" placeholder="例如：1.25 / 5 / 10">
+  <button class="btn-main" onclick="uploadManual()">上传这一局</button>
+  <button class="btn-blue" onclick="loadData()">刷新分析</button>
 </div>
 
 <div class="card">
   <h2>策略状态</h2>
-  <div class="stat">总局数：<span id="totalRounds">0</span></div>
+
+  <div class="grid">
+    <div class="stat">
+      总局数
+      <div id="totalRounds" class="big">0</div>
+    </div>
+
+    <div class="stat">
+      Full TP 次数
+      <div id="fullCount" class="big gold">0</div>
+    </div>
+
+    <div class="stat">
+      Half TP 次数
+      <div id="halfCount" class="big purple">0</div>
+    </div>
+
+    <div class="stat">
+      蓝色次数
+      <div id="blueCount" class="big blue">0</div>
+    </div>
+
+    <div class="stat">
+      Full TP 概率
+      <div id="fullRate" class="big">0%</div>
+    </div>
+
+    <div class="stat">
+      Half TP 概率
+      <div id="halfRate" class="big">0%</div>
+    </div>
+  </div>
+
   <div class="stat">距离上一次 Full TP：<span id="sinceFull">0</span> 局</div>
   <div class="stat">连续蓝色：<span id="blueStreak">0</span></div>
   <div class="stat">连续紫色：<span id="purpleStreak">0</span></div>
-  <div class="stat">Full TP 次数：<span id="fullCount">0</span></div>
-  <div class="stat">Half TP 次数：<span id="halfCount">0</span></div>
-  <div class="stat">Full TP 概率：<span id="fullRate">0%</span></div>
-  <div class="stat">Half TP 概率：<span id="halfRate">0%</span></div>
+  <div class="stat">当前阶段：<span id="phaseText">读取中</span></div>
 </div>
 
 <div class="card">
-  <h2>AI 分析</h2>
-  <div id="analysisBox" class="stat">暂无分析</div>
+  <h2>AI 分析报告</h2>
+  <div id="analysisBox" class="stat">正在分析...</div>
 </div>
 
 <div class="card">
-  <h2>最近 20 局</h2>
-  <div id="historyBox"></div>
+  <h2>最近 30 局</h2>
+  <div id="historyBox" class="log"></div>
 </div>
 
 <script>
-const API_URL = "换成你的 Apps Script URL";
+const API_URL = "https://script.google.com/macros/s/AKfycbw0KU008GPEvr2GEactDTtDb9nIAU6HB_vz3QbuzxT-_Gwo1061cYk5uOQtyHvefHaqOQ/exec";
 
 let rows = [];
+
+async function uploadManual() {
+  const input = document.getElementById("manualMultiplier");
+  const multiplier = Number(input.value);
+
+  if (!multiplier || multiplier <= 0) {
+    alert("请输入正确倍率");
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        multiplier: multiplier,
+        source: "github_manual"
+      })
+    });
+
+    const text = await res.text();
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      alert("上传失败：API 没有返回 JSON。\n\n返回内容：\n" + text.slice(0, 300));
+      return;
+    }
+
+    if (!result.success) {
+      alert("上传失败：" + (result.message || "未知错误"));
+      return;
+    }
+
+    input.value = "";
+    await loadData();
+
+  } catch (err) {
+    alert("上传错误：" + err.message);
+  }
+}
 
 async function loadData() {
   try {
     const res = await fetch(API_URL);
-    const result = await res.json();
+    const text = await res.text();
 
-    if (!result.success) {
-      alert("读取失败");
+    console.log("API 返回内容：", text);
+
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      document.getElementById("answerBox").innerText = "API 返回的不是 JSON";
+      document.getElementById("answerBox").className = "stat big danger";
+
+      document.getElementById("analysisBox").innerText =
+        "你的 Apps Script 链接返回了 HTML 页面，不是 JSON。请检查 Apps Script 是否部署为 Web App，并设置为：谁可以访问 = 任何人。返回内容开头：" + text.slice(0, 200);
+
+      document.getElementById("analysisBox").className = "stat danger";
       return;
     }
 
-    rows = result.data.map(r => ({
-      time: r.time,
-      multiplier: Number(r.multiplier)
+    if (!result.success) {
+      document.getElementById("answerBox").innerText = "读取失败";
+      document.getElementById("answerBox").className = "stat big danger";
+      document.getElementById("analysisBox").innerText = result.message || "API 返回 success:false";
+      document.getElementById("analysisBox").className = "stat danger";
+      return;
+    }
+
+    rows = (result.data || []).map(r => ({
+      time: r.time || "",
+      multiplier: Number(r.multiplier || r.value || 0)
     })).filter(r => r.multiplier > 0);
 
     analyze();
 
   } catch (err) {
-    alert("读取错误：" + err.message);
+    document.getElementById("answerBox").innerText = "读取错误";
+    document.getElementById("answerBox").className = "stat big danger";
+    document.getElementById("analysisBox").innerText = err.message;
+    document.getElementById("analysisBox").className = "stat danger";
   }
 }
 
@@ -144,10 +286,12 @@ function getColor(multiplier) {
 }
 
 function analyze() {
-  let total = rows.length;
+  const total = rows.length;
 
   let fullCount = 0;
   let halfCount = 0;
+  let blueCount = 0;
+  let purpleCount = 0;
 
   let sinceFull = 999;
   let blueStreak = 0;
@@ -170,29 +314,34 @@ function analyze() {
       }
 
       if (color === "blue") {
+        blueCount++;
         blueStreak++;
         purpleStreak = 0;
       } else if (color === "purple") {
+        purpleCount++;
         purpleStreak++;
         blueStreak = 0;
       }
     }
   }
 
-  const fullRate = total > 0 ? (fullCount / total * 100).toFixed(2) : "0.00";
-  const halfRate = total > 0 ? (halfCount / total * 100).toFixed(2) : "0.00";
+  const fullRate = total > 0 ? ((fullCount / total) * 100).toFixed(2) : "0.00";
+  const halfRate = total > 0 ? ((halfCount / total) * 100).toFixed(2) : "0.00";
 
   const answer = getAnswer(sinceFull, blueStreak, purpleStreak);
   const analysis = getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStreak);
 
   document.getElementById("totalRounds").innerText = total;
-  document.getElementById("sinceFull").innerText = sinceFull >= 999 ? "还没出现" : sinceFull;
-  document.getElementById("blueStreak").innerText = blueStreak;
-  document.getElementById("purpleStreak").innerText = purpleStreak;
   document.getElementById("fullCount").innerText = fullCount;
   document.getElementById("halfCount").innerText = halfCount;
+  document.getElementById("blueCount").innerText = blueCount;
   document.getElementById("fullRate").innerText = fullRate + "%";
   document.getElementById("halfRate").innerText = halfRate + "%";
+
+  document.getElementById("sinceFull").innerText = sinceFull >= 999 ? "还没有出现" : sinceFull;
+  document.getElementById("blueStreak").innerText = blueStreak;
+  document.getElementById("purpleStreak").innerText = purpleStreak;
+  document.getElementById("phaseText").innerText = answer.phase;
 
   const answerBox = document.getElementById("answerBox");
   answerBox.innerText = answer.text;
@@ -209,21 +358,24 @@ function getAnswer(sinceFull, blueStreak, purpleStreak) {
   if (sinceFull === 999) {
     return {
       text: "还没有 Full TP 数据，先观察，不下",
-      className: "warning"
+      className: "warning",
+      phase: "等待第一个 Full TP"
     };
   }
 
   if (sinceFull < 7) {
     return {
       text: `Full TP 后等待中，还差 ${7 - sinceFull} 局`,
-      className: "warning"
+      className: "warning",
+      phase: "等待 7 局"
     };
   }
 
   if (purpleStreak >= 2) {
     return {
       text: "连续 2 个紫色，先等 1 局，不马上下",
-      className: "warning"
+      className: "warning",
+      phase: "紫色冷却"
     };
   }
 
@@ -231,30 +383,41 @@ function getAnswer(sinceFull, blueStreak, purpleStreak) {
     if (sinceFull >= 18 && sinceFull <= 20) {
       return {
         text: "进入 18-20 局区间，可以小注尝试第 1 单",
-        className: "safe"
+        className: "safe",
+        phase: "18-20 局窗口"
       };
     }
 
     return {
       text: "连续蓝色过长，不追，等到 18-20 局",
-      className: "danger"
+      className: "danger",
+      phase: "蓝色过长，等待窗口"
     };
   }
 
   if (sinceFull >= 7) {
     return {
-      text: "已过 7 局，可以准备第 1 单，但只允许最多 2 单",
-      className: "safe"
+      text: "已过 7 局，可以准备第 1 单，只允许最多连续 2 单",
+      className: "safe",
+      phase: "允许第 1 单"
     };
   }
 
   return {
     text: "等待",
-    className: "warning"
+    className: "warning",
+    phase: "等待"
   };
 }
 
 function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStreak) {
+  if (total === 0) {
+    return {
+      text: "目前还没有数据。你可以先用手动上传测试，确认 Google Sheet 可以正常写入。",
+      className: "warning"
+    };
+  }
+
   if (total < 30) {
     return {
       text: "数据少于 30 局，参考价值还不高。建议继续记录，不要急着实盘。",
@@ -262,16 +425,16 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStr
     };
   }
 
-  if (Number(fullRate) >= 10) {
+  if (Number(fullRate) >= 10 && sinceFull >= 7) {
     return {
-      text: "目前 Full TP 出现率偏高，但这不代表下一局一定会中。可以继续按规则小注，不要加倍追。",
+      text: "目前 Full TP 出现率偏高，并且已经过了 7 局。可以按规则小注，但不要加倍追单。",
       className: "safe"
     };
   }
 
   if (Number(fullRate) < 8 && sinceFull > 20) {
     return {
-      text: "Full TP 出现率偏低，而且已经很久没出现，当前不适合激进下注。",
+      text: "Full TP 出现率偏低，而且已经超过 20 局没出现。当前不适合激进下注。",
       className: "danger"
     };
   }
@@ -291,7 +454,7 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStr
   }
 
   return {
-    text: "当前数据中性，严格执行：Full TP 后等 7 局，最多连续 2 单。",
+    text: "当前数据中性。严格执行：Full TP 后等 7 局，最多连续 2 单，不加注。",
     className: "warning"
   };
 }
@@ -300,7 +463,7 @@ function renderHistory() {
   const box = document.getElementById("historyBox");
   box.innerHTML = "";
 
-  const recent = rows.slice(-20).reverse();
+  const recent = rows.slice(-30).reverse();
 
   if (recent.length === 0) {
     box.innerHTML = "<div class='gray'>暂无记录</div>";
@@ -326,7 +489,8 @@ function renderHistory() {
     const div = document.createElement("div");
     div.className = "row";
     div.innerHTML = `
-      <div>#${rows.length - index}</div>
+      <div><b>#${rows.length - index}</b></div>
+      <div>时间：${r.time || "无"}</div>
       <div>倍率：<span class="${colorClass}">${r.multiplier}x</span></div>
       <div>类型：${label}</div>
     `;
