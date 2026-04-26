@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>跳飞机云端策略分析系统 V3</title>
+<title>跳飞机云端策略分析系统 V4</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -19,9 +17,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-h1, h2, h3 {
-  margin: 8px 0;
-}
+h1, h2, h3 { margin: 8px 0; }
 
 .card {
   background: #111827;
@@ -61,20 +57,9 @@ button {
   color: white;
 }
 
-.btn-red {
-  background: #ef4444;
-  color: white;
-}
-
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.grid3 {
-  display: grid;
-  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -88,11 +73,6 @@ button {
 .big {
   font-size: 24px;
   font-weight: bold;
-}
-
-.small {
-  font-size: 13px;
-  color: #9ca3af;
 }
 
 .green { color: #4ade80; }
@@ -139,27 +119,16 @@ button {
   margin-left: 4px;
 }
 
-.badge-blue {
-  background: #1d4ed8;
-}
-
-.badge-purple {
-  background: #7e22ce;
-}
-
-.badge-red {
-  background: #dc2626;
-}
-
-.badge-half {
-  background: #a16207;
-}
+.badge-blue { background: #1d4ed8; }
+.badge-purple { background: #7e22ce; }
+.badge-red { background: #dc2626; }
+.badge-half { background: #a16207; }
 </style>
 </head>
 
 <body>
 
-<h1>跳飞机云端策略分析系统 V3</h1>
+<h1>跳飞机云端策略分析系统 V4</h1>
 
 <div class="card">
   <h2>当前答案</h2>
@@ -176,17 +145,16 @@ button {
 
 <div class="card">
   <h2>核心规则</h2>
+  <div class="stat">Full TP = 10x 或以上。只有 Full TP 才重置等待。</div>
+  <div class="stat">Half TP = 5x 或以上，但 Half TP 不重置。</div>
+  <div class="stat">Full TP 出现后等待 7 局，第 8 局才允许第一阶段观察。</div>
   <div class="stat">
-    Full TP = 10x 或以上。只有 Full TP 才重置等待。
-  </div>
-  <div class="stat">
-    Half TP = 5x 或以上，但 Half TP 不重置。
-  </div>
-  <div class="stat">
-    Full TP 出现后等待 7 局，第 8 局才允许第一阶段下单。
-  </div>
-  <div class="stat">
-    紫色模式重点观察：紫紫红 / 紫紫蓝蓝红 / 紫紫蓝紫红。
+    五种模式：
+    A 紫紫红 /
+    B 紫紫蓝蓝红 /
+    C 紫紫蓝紫红 /
+    D 紫紫紫蓝紫紫蓝紫红 /
+    E 紫紫蓝紫紫紫蓝红
   </div>
 </div>
 
@@ -254,6 +222,20 @@ button {
     <div>出现机会：<span id="patternCChance">0</span></div>
     <div>成功次数：<span id="patternCSuccess">0</span></div>
     <div>成功率：<span id="patternCRate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 D：紫 紫 紫 蓝 紫 紫 蓝 紫 红</h3>
+    <div>出现机会：<span id="patternDChance">0</span></div>
+    <div>成功次数：<span id="patternDSuccess">0</span></div>
+    <div>成功率：<span id="patternDRate">0%</span></div>
+  </div>
+
+  <div class="stat">
+    <h3>模式 E：紫 紫 蓝 紫 紫 紫 蓝 红</h3>
+    <div>出现机会：<span id="patternEChance">0</span></div>
+    <div>成功次数：<span id="patternESuccess">0</span></div>
+    <div>成功率：<span id="patternERate">0%</span></div>
   </div>
 </div>
 
@@ -327,13 +309,10 @@ async function loadData() {
     } catch (e) {
       document.getElementById("answerBox").innerText = "API 返回的不是 JSON";
       document.getElementById("answerBox").className = "stat big danger";
-
       document.getElementById("reasonBox").innerText =
         "Apps Script 返回了 HTML，不是 JSON。请检查 Web App 部署权限。";
-
       document.getElementById("analysisBox").innerText =
         "返回内容开头：" + text.slice(0, 200);
-
       document.getElementById("analysisBox").className = "stat danger";
       return;
     }
@@ -364,22 +343,15 @@ async function loadData() {
 }
 
 function getSymbol(multiplier) {
-  if (multiplier >= 10) return "F";     // 红色 Full TP
-  if (multiplier >= 2) return "P";      // 紫色
-  return "B";                           // 蓝色
+  if (multiplier >= 10) return "F";
+  if (multiplier >= 2) return "P";
+  return "B";
 }
 
 function getColor(multiplier) {
   if (multiplier >= 10) return "full";
   if (multiplier >= 2) return "purple";
   return "blue";
-}
-
-function getLabel(multiplier) {
-  if (multiplier >= 10) return "红 / Full TP";
-  if (multiplier >= 5) return "紫 / Half TP";
-  if (multiplier >= 2) return "紫";
-  return "蓝";
 }
 
 function analyze() {
@@ -408,9 +380,7 @@ function analyze() {
     } else {
       sinceFull++;
 
-      if (m >= 5) {
-        halfCount++;
-      }
+      if (m >= 5) halfCount++;
 
       if (symbol === "B") {
         blueCount++;
@@ -457,6 +427,14 @@ function analyze() {
   document.getElementById("patternCSuccess").innerText = patternStats.C.success;
   document.getElementById("patternCRate").innerText = patternStats.C.rate + "%";
 
+  document.getElementById("patternDChance").innerText = patternStats.D.chance;
+  document.getElementById("patternDSuccess").innerText = patternStats.D.success;
+  document.getElementById("patternDRate").innerText = patternStats.D.rate + "%";
+
+  document.getElementById("patternEChance").innerText = patternStats.E.chance;
+  document.getElementById("patternESuccess").innerText = patternStats.E.success;
+  document.getElementById("patternERate").innerText = patternStats.E.rate + "%";
+
   const answerBox = document.getElementById("answerBox");
   answerBox.innerText = answer.text;
   answerBox.className = "stat big " + answer.className;
@@ -476,53 +454,41 @@ function getPatternStats(symbols) {
   const stats = {
     A: { chance: 0, success: 0, rate: "0.00" },
     B: { chance: 0, success: 0, rate: "0.00" },
-    C: { chance: 0, success: 0, rate: "0.00" }
+    C: { chance: 0, success: 0, rate: "0.00" },
+    D: { chance: 0, success: 0, rate: "0.00" },
+    E: { chance: 0, success: 0, rate: "0.00" }
   };
 
-  // 模式 A：P P F
-  // 机会 = 出现 P P 并且后面还有一局
-  for (let i = 0; i <= symbols.length - 3; i++) {
-    if (symbols[i] === "P" && symbols[i + 1] === "P") {
-      stats.A.chance++;
-      if (symbols[i + 2] === "F") {
-        stats.A.success++;
+  function countPattern(key, prefix, finalSymbol) {
+    const totalLen = prefix.length + 1;
+
+    for (let i = 0; i <= symbols.length - totalLen; i++) {
+      let matched = true;
+
+      for (let j = 0; j < prefix.length; j++) {
+        if (symbols[i + j] !== prefix[j]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        stats[key].chance++;
+
+        if (symbols[i + prefix.length] === finalSymbol) {
+          stats[key].success++;
+        }
       }
     }
   }
 
-  // 模式 B：P P B B F
-  // 机会 = 出现 P P B B 并且后面还有一局
-  for (let i = 0; i <= symbols.length - 5; i++) {
-    if (
-      symbols[i] === "P" &&
-      symbols[i + 1] === "P" &&
-      symbols[i + 2] === "B" &&
-      symbols[i + 3] === "B"
-    ) {
-      stats.B.chance++;
-      if (symbols[i + 4] === "F") {
-        stats.B.success++;
-      }
-    }
-  }
+  countPattern("A", ["P", "P"], "F");
+  countPattern("B", ["P", "P", "B", "B"], "F");
+  countPattern("C", ["P", "P", "B", "P"], "F");
+  countPattern("D", ["P", "P", "P", "B", "P", "P", "B", "P"], "F");
+  countPattern("E", ["P", "P", "B", "P", "P", "P", "B"], "F");
 
-  // 模式 C：P P B P F
-  // 机会 = 出现 P P B P 并且后面还有一局
-  for (let i = 0; i <= symbols.length - 5; i++) {
-    if (
-      symbols[i] === "P" &&
-      symbols[i + 1] === "P" &&
-      symbols[i + 2] === "B" &&
-      symbols[i + 3] === "P"
-    ) {
-      stats.C.chance++;
-      if (symbols[i + 4] === "F") {
-        stats.C.success++;
-      }
-    }
-  }
-
-  ["A", "B", "C"].forEach(key => {
+  ["A", "B", "C", "D", "E"].forEach(key => {
     if (stats[key].chance > 0) {
       stats[key].rate = ((stats[key].success / stats[key].chance) * 100).toFixed(2);
     }
@@ -532,57 +498,88 @@ function getPatternStats(symbols) {
 }
 
 function getTailPattern(symbols) {
+  const tail9 = symbols.slice(-9).join("");
+  const tail8 = symbols.slice(-8).join("");
+  const tail7 = symbols.slice(-7).join("");
   const tail5 = symbols.slice(-5).join("");
   const tail4 = symbols.slice(-4).join("");
   const tail3 = symbols.slice(-3).join("");
   const tail2 = symbols.slice(-2).join("");
 
-  if (tail2 === "PP") {
+  if (tail9 === "PPPBPBPF") {
     return {
-      code: "PP",
-      text: "当前尾部：紫 紫，等待下一局确认是否红"
+      code: "D_DONE",
+      text: "刚完成：紫 紫 紫 蓝 紫 紫 蓝 紫 红，模式 D 成功"
     };
   }
 
-  if (tail4 === "PPBB") {
+  if (tail8 === "PPBPPPBF") {
     return {
-      code: "PPBB",
-      text: "当前尾部：紫 紫 蓝 蓝，下一局如果红 = 模式 B 成功"
-    };
-  }
-
-  if (tail4 === "PPBP") {
-    return {
-      code: "PPBP",
-      text: "当前尾部：紫 紫 蓝 紫，下一局如果红 = 模式 C 成功"
-    };
-  }
-
-  if (tail3 === "PPB") {
-    return {
-      code: "PPB",
-      text: "当前尾部：紫 紫 蓝，继续观察会不会走 B 或 C"
+      code: "E_DONE",
+      text: "刚完成：紫 紫 蓝 紫 紫 紫 蓝 红，模式 E 成功"
     };
   }
 
   if (tail5 === "PPBBF") {
     return {
-      code: "PPBBF",
+      code: "B_DONE",
       text: "刚完成：紫 紫 蓝 蓝 红，模式 B 成功"
     };
   }
 
   if (tail5 === "PPBPF") {
     return {
-      code: "PPBPF",
+      code: "C_DONE",
       text: "刚完成：紫 紫 蓝 紫 红，模式 C 成功"
     };
   }
 
   if (tail3 === "PPF") {
     return {
-      code: "PPF",
+      code: "A_DONE",
       text: "刚完成：紫 紫 红，模式 A 成功"
+    };
+  }
+
+  if (tail8 === "PPPBPBP") {
+    return {
+      code: "D_READY",
+      text: "当前尾部：紫 紫 紫 蓝 紫 紫 蓝 紫，下一局如果红 = 模式 D 成功"
+    };
+  }
+
+  if (tail7 === "PPBPPPB") {
+    return {
+      code: "E_READY",
+      text: "当前尾部：紫 紫 蓝 紫 紫 紫 蓝，下一局如果红 = 模式 E 成功"
+    };
+  }
+
+  if (tail4 === "PPBB") {
+    return {
+      code: "B_READY",
+      text: "当前尾部：紫 紫 蓝 蓝，下一局如果红 = 模式 B 成功"
+    };
+  }
+
+  if (tail4 === "PPBP") {
+    return {
+      code: "C_READY",
+      text: "当前尾部：紫 紫 蓝 紫，下一局如果红 = 模式 C 成功"
+    };
+  }
+
+  if (tail3 === "PPB") {
+    return {
+      code: "BC_WAIT",
+      text: "当前尾部：紫 紫 蓝，继续观察会不会走 B / C / E"
+    };
+  }
+
+  if (tail2 === "PP") {
+    return {
+      code: "A_READY",
+      text: "当前尾部：紫 紫，下一局如果红 = 模式 A 成功"
     };
   }
 
@@ -622,7 +619,25 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PPBB") {
+  if (tail.code === "D_READY") {
+    return {
+      text: "高关注：模式 D 已到临界点，下一局看红",
+      reason: `模式 D 历史：${patternStats.D.success}/${patternStats.D.chance}，成功率 ${patternStats.D.rate}%。当前形态：紫紫紫蓝紫紫蓝紫，下一局如果 10x+，模式 D 成功。`,
+      className: patternStats.D.chance >= 2 && Number(patternStats.D.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 D 等红"
+    };
+  }
+
+  if (tail.code === "E_READY") {
+    return {
+      text: "高关注：模式 E 已到临界点，下一局看红",
+      reason: `模式 E 历史：${patternStats.E.success}/${patternStats.E.chance}，成功率 ${patternStats.E.rate}%。当前形态：紫紫蓝紫紫紫蓝，下一局如果 10x+，模式 E 成功。`,
+      className: patternStats.E.chance >= 2 && Number(patternStats.E.rate) >= 30 ? "safe" : "warning",
+      phase: "模式 E 等红"
+    };
+  }
+
+  if (tail.code === "B_READY") {
     return {
       text: "高关注：紫紫蓝蓝已出现，下一局看红",
       reason: `模式 B 历史：${patternStats.B.success}/${patternStats.B.chance}，成功率 ${patternStats.B.rate}%。如果下一局出 10x+，模式 B 成功。`,
@@ -631,7 +646,7 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PPBP") {
+  if (tail.code === "C_READY") {
     return {
       text: "高关注：紫紫蓝紫已出现，下一局看红",
       reason: `模式 C 历史：${patternStats.C.success}/${patternStats.C.chance}，成功率 ${patternStats.C.rate}%。如果下一局出 10x+，模式 C 成功。`,
@@ -640,7 +655,7 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PP") {
+  if (tail.code === "A_READY") {
     return {
       text: "观察确认：刚出现紫紫，下一局看是否红",
       reason: `模式 A 历史：${patternStats.A.success}/${patternStats.A.chance}，成功率 ${patternStats.A.rate}%。如果下一局直接 10x+，模式 A 成功。`,
@@ -649,16 +664,16 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PPB") {
+  if (tail.code === "BC_WAIT") {
     return {
       text: "继续观察：紫紫蓝已出现",
-      reason: "现在可能走向模式 B：紫紫蓝蓝红，或模式 C：紫紫蓝紫红。下一局很关键。",
+      reason: "现在可能走向模式 B：紫紫蓝蓝红，模式 C：紫紫蓝紫红，或模式 E：紫紫蓝紫紫紫蓝红。",
       className: "warning",
-      phase: "B/C 前置观察"
+      phase: "B/C/E 前置观察"
     };
   }
 
-  if (tail.code === "PPF") {
+  if (tail.code === "A_DONE") {
     return {
       text: "模式 A 刚成功，重新等待 7 局",
       reason: "刚出现紫紫红，并且红是 Full TP。Full TP 会重置周期。",
@@ -667,7 +682,7 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PPBBF") {
+  if (tail.code === "B_DONE") {
     return {
       text: "模式 B 刚成功，重新等待 7 局",
       reason: "刚出现紫紫蓝蓝红，并且红是 Full TP。Full TP 会重置周期。",
@@ -676,10 +691,28 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
     };
   }
 
-  if (tail.code === "PPBPF") {
+  if (tail.code === "C_DONE") {
     return {
       text: "模式 C 刚成功，重新等待 7 局",
       reason: "刚出现紫紫蓝紫红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "D_DONE") {
+    return {
+      text: "模式 D 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫紫蓝紫紫蓝紫红，并且红是 Full TP。Full TP 会重置周期。",
+      className: "warning",
+      phase: "Full TP 后重置"
+    };
+  }
+
+  if (tail.code === "E_DONE") {
+    return {
+      text: "模式 E 刚成功，重新等待 7 局",
+      reason: "刚出现紫紫蓝紫紫紫蓝红，并且红是 Full TP。Full TP 会重置周期。",
       className: "warning",
       phase: "Full TP 后重置"
     };
@@ -706,7 +739,7 @@ function getAnswer(sinceFull, blueStreak, purpleStreak, symbols, patternStats) {
   if (sinceFull >= 7) {
     return {
       text: "已过 7 局，可以第 8 局规则观察",
-      reason: "第一阶段等待已经完成，但当前没有出现紫色三模式的强信号。可以按规则小注，不要追。",
+      reason: "第一阶段等待已经完成，但当前没有出现强模式信号。可以按规则观察，不要追。",
       className: "safe",
       phase: "第 8 局观察"
     };
@@ -738,24 +771,21 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStr
   let bestMode = "A";
   let bestRate = Number(patternStats.A.rate);
 
-  if (Number(patternStats.B.rate) > bestRate) {
-    bestMode = "B";
-    bestRate = Number(patternStats.B.rate);
-  }
-
-  if (Number(patternStats.C.rate) > bestRate) {
-    bestMode = "C";
-    bestRate = Number(patternStats.C.rate);
-  }
+  ["B", "C", "D", "E"].forEach(key => {
+    if (Number(patternStats[key].rate) > bestRate) {
+      bestMode = key;
+      bestRate = Number(patternStats[key].rate);
+    }
+  });
 
   let text = `目前 Full TP 概率 ${fullRate}%，Half TP 概率 ${halfRate}%。`;
 
-  text += ` 模式 A 成功率 ${patternStats.A.rate}%，模式 B 成功率 ${patternStats.B.rate}%，模式 C 成功率 ${patternStats.C.rate}%。`;
+  text += ` 模式A ${patternStats.A.rate}%，模式B ${patternStats.B.rate}%，模式C ${patternStats.C.rate}%，模式D ${patternStats.D.rate}%，模式E ${patternStats.E.rate}%。`;
 
   if (bestRate > 0) {
     text += ` 当前历史上表现较好的模式是：模式 ${bestMode}。`;
   } else {
-    text += " 目前三种紫色模式还没有明显成功记录。";
+    text += " 目前五种紫色模式还没有明显成功记录。";
   }
 
   if (sinceFull > 20 && Number(fullRate) < 8) {
@@ -765,14 +795,14 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStr
     };
   }
 
-  if (tail.code === "PPBB" || tail.code === "PPBP") {
+  if (["B_READY", "C_READY", "D_READY", "E_READY"].includes(tail.code)) {
     return {
-      text: text + " 当前已经进入紫色模式临界点，下一局很关键，但仍然不能加倍追。",
+      text: text + " 当前已经进入模式临界点，下一局很关键，但仍然不能加倍追。",
       className: "safe"
     };
   }
 
-  if (tail.code === "PP") {
+  if (tail.code === "A_READY") {
     return {
       text: text + " 当前刚出现紫紫，先等下一局确认，不要提前乱下。",
       className: "warning"
@@ -780,7 +810,7 @@ function getAnalysis(total, fullRate, halfRate, sinceFull, blueStreak, purpleStr
   }
 
   return {
-    text: text + " 当前建议按规则观察：10x 后等 7 局，5x 不重置，紫色三模式只作为辅助信号。",
+    text: text + " 当前建议按规则观察：10x 后等 7 局，5x 不重置，五种紫色模式只作为辅助信号。",
     className: "warning"
   };
 }
