@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>地球Online｜每日任務系統</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地球Online V3｜人生任務系統</title>
 <style>
 *{box-sizing:border-box}
 body{
   margin:0;
   font-family:Arial,"Microsoft JhengHei",sans-serif;
   background:#07111f;
-  color:#fff;
+  color:white;
 }
 header{
   padding:22px;
@@ -19,25 +19,18 @@ header{
 }
 h1{margin:0;font-size:26px}
 small{color:#94a3b8}
-main{
-  max-width:1100px;
-  margin:auto;
-  padding:16px;
-}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-  gap:14px;
-}
+main{max-width:1150px;margin:auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .card{
   background:#111827;
   border:1px solid #263244;
   border-radius:18px;
   padding:16px;
+  margin-bottom:14px;
   box-shadow:0 8px 25px rgba(0,0,0,.25);
 }
 h2{font-size:18px;margin:0 0 12px}
-input,select,textarea{
+input,textarea{
   width:100%;
   padding:11px;
   border-radius:10px;
@@ -52,11 +45,13 @@ button{
   padding:10px 13px;
   cursor:pointer;
   font-weight:bold;
+  margin:3px;
 }
 .primary{background:#22c55e;color:#06220f}
 .danger{background:#ef4444;color:white}
 .blue{background:#38bdf8;color:#00131d}
 .gray{background:#334155;color:white}
+.yellow{background:#facc15;color:#1f1300}
 .task{
   display:flex;
   align-items:center;
@@ -68,24 +63,19 @@ button{
   border-radius:12px;
   border:1px solid #1e293b;
 }
-.doneText{color:#22c55e;font-weight:bold}
-.failText{color:#ef4444;font-weight:bold}
 .stat{
   padding:10px;
   border-radius:12px;
   background:#0b1220;
   margin:8px 0;
 }
-.big{
-  font-size:26px;
-  font-weight:bold;
-}
+.big{font-size:26px;font-weight:bold}
 .warn{color:#facc15}
 .good{color:#22c55e}
 .bad{color:#ef4444}
 .progressBox{
   width:100%;
-  height:16px;
+  height:17px;
   background:#020617;
   border-radius:999px;
   overflow:hidden;
@@ -96,156 +86,177 @@ button{
   width:0%;
   background:#22c55e;
 }
-footer{
-  text-align:center;
-  color:#64748b;
-  padding:20px;
+.level{
+  font-size:28px;
+  font-weight:bold;
+  padding:14px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #334155;
 }
+footer{text-align:center;color:#64748b;padding:20px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌍 地球Online｜每日任務系統</h1>
-  <small>健康監督・收入目標・債務進度・防誤按打卡</small>
+  <h1>🌍 地球Online V3｜人生任務系統</h1>
+  <small>收入等級・連勝系統・健康監督・債務進度・防誤按打卡</small>
 </header>
 
 <main>
 
+<div class="card">
+  <h2>🔥 今日核心任務</h2>
+  <div class="level" id="todayLevel">等待輸入收入...</div>
+  <p id="motivation" class="warn">今天不是要完美，是要推進一點點。</p>
+</div>
+
 <div class="grid">
 
-  <div class="card">
-    <h2>💱 匯率設定</h2>
-    <label>1 SGD = 幾多 RM</label>
-    <input id="rate" type="number" value="3.5" step="0.01">
-    <button class="blue" onclick="saveSettings()">保存設定</button>
-  </div>
+<div class="card">
+<h2>💱 匯率設定</h2>
+<label>1 SGD = RM</label>
+<input id="rate" type="number" value="3.5" step="0.01">
+<button class="blue" onclick="saveSettings()">保存設定</button>
+</div>
 
-  <div class="card">
-    <h2>💰 工資與固定支出</h2>
+<div class="card">
+<h2>💰 工資與固定支出</h2>
 
-    <label>月薪 SGD</label>
-    <input id="salarySGD" type="number" value="2200">
+<label>月薪 SGD</label>
+<input id="salarySGD" type="number" value="2200">
 
-    <label>房租 SGD</label>
-    <input id="rentSGD" type="number" value="800">
+<label>房租 SGD</label>
+<input id="rentSGD" type="number" value="800">
 
-    <label>吃喝 SGD</label>
-    <input id="foodSGD" type="number" value="300">
+<label>吃喝 SGD</label>
+<input id="foodSGD" type="number" value="300">
 
-    <label>車貸 SGD</label>
-    <input id="carSGD" type="number" value="345">
+<label>車貸 SGD</label>
+<input id="carSGD" type="number" value="345">
 
-    <label>爺爺 RM / 月</label>
-    <input id="grandpaRM" type="number" value="1000">
+<label>爺爺 RM / 月</label>
+<input id="grandpaRM" type="number" value="1000">
 
-    <label>爸爸 RM / 月</label>
-    <input id="dadRM" type="number" value="2000">
+<label>爸爸 RM / 月</label>
+<input id="dadRM" type="number" value="2000">
 
-    <label>媽媽 RM / 月平均</label>
-    <input id="momRM" type="number" value="1000">
+<label>媽媽 RM / 月平均</label>
+<input id="momRM" type="number" value="1000">
 
-    <label>貓糧 RM / 月</label>
-    <input id="catFoodRM" type="number" value="500">
+<label>貓糧 RM / 月</label>
+<input id="catFoodRM" type="number" value="500">
 
-    <button class="primary" onclick="calculateFinance()">重新計算</button>
-  </div>
+<button class="primary" onclick="calculateFinance()">重新計算</button>
+</div>
 
-  <div class="card">
-    <h2>📊 今日需要賺多少</h2>
-    <div class="stat">
-      每月可用 RM：<div id="netRM" class="big">-</div>
-    </div>
-    <div class="stat">
-      每月固定壓力 RM：<div id="needRM" class="big">-</div>
-    </div>
-    <div class="stat">
-      每月缺口 RM：<div id="gapRM" class="big bad">-</div>
-    </div>
-    <div class="stat">
-      每天最低目標 RM：<div id="dailyRM" class="big warn">-</div>
-    </div>
-  </div>
+<div class="card">
+<h2>📊 每日最低收入目標</h2>
+<div class="stat">每月可用 RM：<div id="netRM" class="big">-</div></div>
+<div class="stat">每月家庭/生活壓力 RM：<div id="needRM" class="big">-</div></div>
+<div class="stat">每月缺口 RM：<div id="gapRM" class="big bad">-</div></div>
+<div class="stat">每天最低目標 RM：<div id="dailyRM" class="big warn">-</div></div>
+</div>
 
-  <div class="card">
-    <h2>🔥 今日收入打卡</h2>
-    <label>今天實際進帳 RM</label>
-    <input id="todayIncome" type="number" placeholder="例如 200">
-    <label>收入來源 / 做了什麼</label>
-    <textarea id="incomeNote" placeholder="例如：工作、線上任務、學習產出、內容製作"></textarea>
-    <button class="primary" onclick="saveIncome()">確認今日收入</button>
-    <p id="incomeResult"></p>
-  </div>
+<div class="card">
+<h2>🔥 今日收入打卡</h2>
+<label>今天實際進帳 RM</label>
+<input id="todayIncome" type="number" placeholder="例如 200">
 
-  <div class="card">
-    <h2>🚗 車貸進度</h2>
-    <label>車貸總額 RM</label>
-    <input id="carTotalRM" type="number" value="100000">
+<label>收入來源 / 做了什麼</label>
+<textarea id="incomeNote" placeholder="例如：工作、線上學習、內容製作、系統開發"></textarea>
 
-    <label>每月還款 RM</label>
-    <input id="carMonthlyRM" type="number" value="1000">
+<button class="primary" onclick="saveIncome()">確認今日收入</button>
+<p id="incomeResult"></p>
+</div>
 
-    <label>開始還款日期</label>
-    <input id="carStart" type="date" value="2025-03-14">
+<div class="card">
+<h2>🏆 連勝 / 狀態系統</h2>
+<div class="stat">連續達標天數：<div id="streak" class="big good">0</div></div>
+<div class="stat">今日任務完成率：<div id="taskRate" class="big warn">0%</div></div>
+<div class="stat">失敗懲罰：<div id="penalty" class="bad">無</div></div>
+</div>
 
-    <button class="blue" onclick="calculateDebt()">計算車貸進度</button>
+<div class="card">
+<h2>🚗 車貸進度</h2>
 
-    <div class="stat">
-      已還 RM：<b id="paidRM">-</b><br>
-      剩餘 RM：<b id="leftRM">-</b><br>
-      預計還清：<b id="clearDate">-</b>
-    </div>
+<label>車貸總額 RM</label>
+<input id="carTotalRM" type="number" value="100000">
 
-    <div class="progressBox">
-      <div id="debtProgress" class="progress"></div>
-    </div>
-  </div>
+<label>每月還款 RM</label>
+<input id="carMonthlyRM" type="number" value="1000">
 
-  <div class="card">
-    <h2>🧾 其他債務 / 一次性支出</h2>
-    <label>以前借錢 RM</label>
-    <input id="borrowRM" type="number" value="6000">
+<label>開始還款日期</label>
+<input id="carStart" type="date" value="2025-03-14">
 
-    <label>升級貓房 RM</label>
-    <input id="catRoomRM" type="number" value="1000">
+<button class="blue" onclick="calculateDebt()">計算車貸進度</button>
 
-    <button class="blue" onclick="calculateFinance()">更新壓力</button>
-    <p class="warn">建議：借錢優先清，貓房升級可以分階段，不要一次爆掉現金流。</p>
-  </div>
+<div class="stat">
+已還 RM：<b id="paidRM">-</b><br>
+剩餘 RM：<b id="leftRM">-</b><br>
+預計還清：<b id="clearDate">-</b>
+</div>
+
+<div class="progressBox">
+<div id="debtProgress" class="progress"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>🧾 其他債務 / 一次性支出</h2>
+
+<label>以前借錢 RM</label>
+<input id="borrowRM" type="number" value="6000">
+
+<label>升級貓房 RM</label>
+<input id="catRoomRM" type="number" value="1000">
+
+<button class="blue" onclick="calculateFinance()">更新壓力</button>
+<p class="warn">建議：借錢優先清，貓房升級分階段，不要一次爆現金流。</p>
+</div>
 
 </div>
 
 <div class="card">
-  <h2>✅ 今日任務打卡</h2>
-  <p class="warn">每次按完成都要二次確認 + 輸入證明，防止自己亂按。</p>
+<h2>✅ 今日任務打卡</h2>
+<p class="warn">每次按完成都要二次確認 + 輸入證明，防止自己亂按。</p>
 
-  <div id="taskList"></div>
+<div id="taskList"></div>
 
-  <button class="blue" onclick="addTask()">新增任務</button>
-  <button class="gray" onclick="resetToday()">重置今天</button>
+<button class="blue" onclick="addTask()">新增任務</button>
+<button class="gray" onclick="resetToday()">重置今天</button>
 </div>
 
 <div class="card">
-  <h2>📜 今日紀錄</h2>
-  <div id="log"></div>
+<h2>📜 今日紀錄</h2>
+<div id="log"></div>
+</div>
+
+<div class="card">
+<h2>🗂 歷史紀錄</h2>
+<button class="blue" onclick="renderHistory()">查看最近紀錄</button>
+<button class="danger" onclick="clearAllData()">清空全部資料</button>
+<div id="history"></div>
 </div>
 
 </main>
 
 <footer>
-  地球Online：不要靠情緒活，靠系統活。
+地球Online V3：不要靠情緒活，靠系統活。
 </footer>
 
 <script>
-const KEY = "earth_online_life_system_v1";
+const KEY = "earth_online_life_system_v3";
 
 let defaultTasks = [
   "刷牙 / 牙齦照顧",
-  "處理鼻塞 / 熱蒸氣 / 看醫生安排",
+  "處理鼻塞 / 熱蒸氣 / 安排看醫生",
   "不喝酒",
   "曬太陽或走路 15 分鐘",
   "工作穩定完成",
-  "學習 / 線上技能 30 分鐘",
+  "線上技能學習 30 分鐘",
+  "完成一個小功能 / 小產出",
   "更新收入紀錄",
   "睡前整理明天任務"
 ];
@@ -253,7 +264,8 @@ let defaultTasks = [
 let data = JSON.parse(localStorage.getItem(KEY)) || {
   tasks:{},
   logs:[],
-  customTasks:[]
+  customTasks:[],
+  incomeByDate:{}
 };
 
 function today(){
@@ -286,21 +298,44 @@ function calculateFinance(){
     getVal("momRM") +
     getVal("catFoodRM");
 
-  const oneTimePressure =
-    getVal("borrowRM") +
-    getVal("catRoomRM");
-
   const net = salaryRM - sgExpenseRM;
-  const monthlyNeed = familyRM;
-  const gap = monthlyNeed - net;
+  const gap = familyRM - net;
   const daily = Math.max(0, gap / 30);
 
   document.getElementById("netRM").innerText = "RM " + net.toFixed(0);
-  document.getElementById("needRM").innerText = "RM " + monthlyNeed.toFixed(0);
+  document.getElementById("needRM").innerText = "RM " + familyRM.toFixed(0);
   document.getElementById("gapRM").innerText = "RM " + gap.toFixed(0);
   document.getElementById("dailyRM").innerText = "RM " + daily.toFixed(0);
 
   return daily;
+}
+
+function updateLevel(income){
+  let level = "";
+  let msg = "";
+
+  if(income >= 500){
+    level = "👑 爆發狀態";
+    msg = "今天你不是普通玩家，你是在加速翻身。";
+  }else if(income >= 300){
+    level = "🚀 加速翻身";
+    msg = "RM300 以上代表你開始拉開距離。";
+  }else if(income >= 200){
+    level = "🔥 達標推進";
+    msg = "今天有推進，壓力少一點，自由近一點。";
+  }else if(income >= 100){
+    level = "🟡 穩定啟動";
+    msg = "有行動就不是零，明天再推高。";
+  }else if(income >= 50){
+    level = "⚠️ 勉強執行";
+    msg = "今天至少沒有完全放棄，但還不夠狠。";
+  }else{
+    level = "💀 今日崩盤";
+    msg = "不是罵你，是提醒你：不能連續崩。";
+  }
+
+  document.getElementById("todayLevel").innerText = level;
+  document.getElementById("motivation").innerText = msg;
 }
 
 function saveIncome(){
@@ -308,13 +343,15 @@ function saveIncome(){
   const note = document.getElementById("incomeNote").value.trim();
   const dailyTarget = calculateFinance();
 
-  if(!income || note.length < 3){
-    alert("請輸入收入和證明，不要亂按。");
+  if(note.length < 3){
+    alert("請輸入收入來源 / 證明，不要亂按。");
     return;
   }
 
   const ok = confirm("你確定今天真的進帳 RM " + income + " 嗎？");
   if(!ok) return;
+
+  data.incomeByDate[today()] = income;
 
   data.logs.unshift({
     date:today(),
@@ -324,12 +361,15 @@ function saveIncome(){
 
   save();
 
+  updateLevel(income);
+  updateStreak();
+  updatePenalty();
+  renderLog();
+
   document.getElementById("incomeResult").innerHTML =
     income >= dailyTarget
     ? "<span class='good'>🔥 今日達標！</span>"
     : "<span class='bad'>未達標，還差 RM " + (dailyTarget-income).toFixed(0) + "</span>";
-
-  renderLog();
 }
 
 function calculateDebt(){
@@ -367,7 +407,7 @@ function renderTasks(){
 
   const allTasks = [...defaultTasks, ...data.customTasks];
 
-  allTasks.forEach((task,i)=>{
+  allTasks.forEach(task=>{
     const key = today() + "_" + task;
     const status = data.tasks[key];
 
@@ -380,12 +420,15 @@ function renderTasks(){
         <small>${status ? status : "未完成"}</small>
       </div>
       <div>
-        <button class="primary" onclick="completeTask('${task}')">✔</button>
-        <button class="danger" onclick="failTask('${task}')">✘</button>
+        <button class="primary" onclick="completeTask('${task.replace(/'/g,"\\'")}')">✔</button>
+        <button class="danger" onclick="failTask('${task.replace(/'/g,"\\'")}')">✘</button>
       </div>
     `;
+
     box.appendChild(div);
   });
+
+  updateTaskRate();
 }
 
 function completeTask(task){
@@ -410,6 +453,7 @@ function completeTask(task){
   save();
   renderTasks();
   renderLog();
+  updatePenalty();
 }
 
 function failTask(task){
@@ -427,6 +471,7 @@ function failTask(task){
   save();
   renderTasks();
   renderLog();
+  updatePenalty();
 }
 
 function addTask(){
@@ -446,8 +491,72 @@ function resetToday(){
     if(k.startsWith(today())) delete data.tasks[k];
   });
 
+  delete data.incomeByDate[today()];
+
   save();
   renderTasks();
+  renderLog();
+  updateStreak();
+  updatePenalty();
+  updateLevel(0);
+}
+
+function updateTaskRate(){
+  const allTasks = [...defaultTasks, ...data.customTasks];
+  let done = 0;
+
+  allTasks.forEach(task=>{
+    const key = today() + "_" + task;
+    if(data.tasks[key] && data.tasks[key].startsWith("✔")) done++;
+  });
+
+  const rate = allTasks.length ? Math.round(done / allTasks.length * 100) : 0;
+  document.getElementById("taskRate").innerText = rate + "%";
+}
+
+function updateStreak(){
+  const dailyTarget = calculateFinance();
+  let streak = 0;
+
+  for(let i=0;i<365;i++){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const date = d.toISOString().slice(0,10);
+    const income = data.incomeByDate[date];
+
+    if(income >= dailyTarget){
+      streak++;
+    }else{
+      break;
+    }
+  }
+
+  document.getElementById("streak").innerText = streak;
+}
+
+function updatePenalty(){
+  const income = data.incomeByDate[today()] || 0;
+  const dailyTarget = calculateFinance();
+
+  const allTasks = [...defaultTasks, ...data.customTasks];
+  let done = 0;
+
+  allTasks.forEach(task=>{
+    const key = today() + "_" + task;
+    if(data.tasks[key] && data.tasks[key].startsWith("✔")) done++;
+  });
+
+  let penalty = "無";
+
+  if(income < dailyTarget){
+    penalty = "今天收入未達標：睡前補 30 分鐘學習 / 明天第一任務先做收入相關";
+  }
+
+  if(done < Math.ceil(allTasks.length * 0.5)){
+    penalty = "任務完成率太低：今晚不可娛樂，先完成明天計劃";
+  }
+
+  document.getElementById("penalty").innerText = penalty;
 }
 
 function renderLog(){
@@ -460,16 +569,40 @@ function renderLog(){
   }
 
   box.innerHTML = todayLogs.map(x=>`
+    <div class="stat">${x.text}</div>
+  `).join("");
+}
+
+function renderHistory(){
+  const box = document.getElementById("history");
+
+  if(data.logs.length === 0){
+    box.innerHTML = "<p class='warn'>沒有歷史紀錄。</p>";
+    return;
+  }
+
+  box.innerHTML = data.logs.slice(0,50).map(x=>`
     <div class="stat">
-      ${x.text}
+      <b>${x.date}</b><br>${x.text}
     </div>
   `).join("");
+}
+
+function clearAllData(){
+  const ok = confirm("確定清空全部資料？這個不能恢復。");
+  if(!ok) return;
+
+  localStorage.removeItem(KEY);
+  location.reload();
 }
 
 calculateFinance();
 calculateDebt();
 renderTasks();
 renderLog();
+updateStreak();
+updatePenalty();
+updateLevel(data.incomeByDate[today()] || 0);
 </script>
 
 </body>
