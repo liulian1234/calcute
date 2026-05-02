@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>地球Online V3｜人生任務系統</title>
+<title>地球Online V4｜翻身任務系統</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#07111f;color:white}
 header{padding:22px;background:linear-gradient(135deg,#0f172a,#1e293b);border-bottom:1px solid #334155}
 h1{margin:0;font-size:26px}
 small{color:#94a3b8}
-main{max-width:1150px;margin:auto;padding:16px}
+main{max-width:1200px;margin:auto;padding:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .card{background:#111827;border:1px solid #263244;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 8px 25px rgba(0,0,0,.25)}
 h2{font-size:18px;margin:0 0 12px}
-input,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#020617;color:white;margin:6px 0 10px}
+input,textarea,select{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#020617;color:white;margin:6px 0 10px}
 button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;font-weight:bold;margin:3px}
 .primary{background:#22c55e;color:#06220f}
 .danger{background:#ef4444;color:white}
 .blue{background:#38bdf8;color:#00131d}
 .gray{background:#334155;color:white}
+.yellow{background:#facc15;color:#1f1300}
 .task{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;margin:8px 0;background:#0b1220;border-radius:12px;border:1px solid #1e293b}
 .stat{padding:10px;border-radius:12px;background:#0b1220;margin:8px 0}
 .big{font-size:26px;font-weight:bold}
@@ -30,13 +32,15 @@ button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;font-weight:
 .progress{height:100%;width:0%;background:#22c55e}
 .level{font-size:28px;font-weight:bold;padding:14px;border-radius:14px;background:#020617;border:1px solid #334155}
 footer{text-align:center;color:#64748b;padding:20px}
+hr{border:0;border-top:1px solid #334155;margin:12px 0}
 </style>
 </head>
+
 <body>
 
 <header>
-<h1>🌍 地球Online V3｜人生任務系統</h1>
-<small>自動匯率・收入等級・連勝系統・健康監督・債務進度・防誤按打卡</small>
+<h1>🌍 地球Online V4｜翻身任務系統</h1>
+<small>自動匯率・收入等級・還債系統・每日分配・健康監督・防誤按打卡</small>
 </header>
 
 <main>
@@ -138,18 +142,66 @@ footer{text-align:center;color:#64748b;padding:20px}
 </div>
 </div>
 
-<div class="card">
-<h2>🧾 其他債務 / 一次性支出</h2>
-<label>以前借錢 RM</label>
-<input id="borrowRM" type="number" value="6000">
-
-<label>升級貓房 RM</label>
-<input id="catRoomRM" type="number" value="1000">
-
-<button class="blue" onclick="calculateFinance()">更新壓力</button>
-<p class="warn">建議：借錢優先清，貓房升級分階段，不要一次爆現金流。</p>
 </div>
 
+<div class="card">
+<h2>💣 V4 還債系統</h2>
+
+<div class="grid">
+
+<div>
+<label>借錢債務 RM</label>
+<input id="borrowDebt" type="number" value="6000">
+
+<label>貓房升級 RM</label>
+<input id="catRoomDebt" type="number" value="1000">
+
+<label>其他債務 RM</label>
+<input id="otherDebt" type="number" value="0">
+
+<button class="blue" onclick="saveDebtSettings()">保存債務設定</button>
+</div>
+
+<div>
+<div class="stat">
+總短期債務 RM：
+<div id="totalShortDebt" class="big bad">-</div>
+</div>
+
+<div class="stat">
+建議每日還債 RM：
+<div id="suggestPayDebt" class="big warn">-</div>
+</div>
+
+<div class="stat">
+預計清短債日期：
+<div id="shortDebtClearDate" class="big good">-</div>
+</div>
+</div>
+
+</div>
+
+<hr>
+
+<h2>📌 今日收入自動分配</h2>
+<p class="warn">建議比例：50%還債 / 30%生活緩衝 / 20%自己保留</p>
+
+<label>今天收入 RM</label>
+<input id="allocateIncome" type="number" placeholder="例如 200">
+
+<label>還債比例 %</label>
+<input id="debtPercent" type="number" value="50">
+
+<label>生活緩衝 %</label>
+<input id="bufferPercent" type="number" value="30">
+
+<label>自己保留 %</label>
+<input id="selfPercent" type="number" value="20">
+
+<button class="primary" onclick="allocateMoney()">計算分配</button>
+<button class="yellow" onclick="payDebtFromAllocation()">用分配金額還債</button>
+
+<div id="allocationResult"></div>
 </div>
 
 <div class="card">
@@ -175,11 +227,11 @@ footer{text-align:center;color:#64748b;padding:20px}
 </main>
 
 <footer>
-地球Online V3：不要靠情緒活，靠系統活。
+地球Online V4：先保命，再還債，再翻身。
 </footer>
 
 <script>
-const KEY = "earth_online_life_system_v3";
+const KEY = "earth_online_life_system_v4";
 
 let defaultTasks = [
   "刷牙 / 牙齦照顧",
@@ -197,7 +249,17 @@ let data = JSON.parse(localStorage.getItem(KEY)) || {
   tasks:{},
   logs:[],
   customTasks:[],
-  incomeByDate:{}
+  incomeByDate:{},
+  debt:{
+    borrowDebt:6000,
+    catRoomDebt:1000,
+    otherDebt:0
+  },
+  allocation:{
+    lastDebtPay:0,
+    lastBuffer:0,
+    lastSelf:0
+  }
 };
 
 function today(){
@@ -205,7 +267,7 @@ function today(){
 }
 
 function save(){
-  localStorage.setItem(KEY,JSON.stringify(data));
+  localStorage.setItem(KEY, JSON.stringify(data));
 }
 
 function getVal(id){
@@ -219,12 +281,9 @@ async function fetchRate(){
   try{
     const res = await fetch("https://api.frankfurter.dev/v1/latest?base=SGD&symbols=MYR");
     const json = await res.json();
-
     const rate = json.rates.MYR;
 
-    if(!rate){
-      throw new Error("沒有讀到 MYR 匯率");
-    }
+    if(!rate) throw new Error("沒有讀到 MYR 匯率");
 
     document.getElementById("rate").value = rate.toFixed(4);
     status.innerText = "已更新：1 SGD = RM " + rate.toFixed(4);
@@ -236,7 +295,6 @@ async function fetchRate(){
   }catch(err){
     status.innerText = "匯率更新失敗，暫時使用手動匯率";
     calculateFinance();
-    console.error(err);
   }
 }
 
@@ -266,6 +324,8 @@ function calculateFinance(){
   document.getElementById("needRM").innerText = "RM " + familyRM.toFixed(0);
   document.getElementById("gapRM").innerText = "RM " + gap.toFixed(0);
   document.getElementById("dailyRM").innerText = "RM " + daily.toFixed(0);
+
+  updateDebtSummary();
 
   return daily;
 }
@@ -330,6 +390,9 @@ function saveIncome(){
     income >= dailyTarget
     ? "<span class='good'>🔥 今日達標！</span>"
     : "<span class='bad'>未達標，還差 RM " + (dailyTarget-income).toFixed(0) + "</span>";
+
+  document.getElementById("allocateIncome").value = income;
+  allocateMoney();
 }
 
 function calculateDebt(){
@@ -361,6 +424,131 @@ function calculateDebt(){
   document.getElementById("debtProgress").style.width = percent + "%";
 }
 
+function saveDebtSettings(){
+  data.debt.borrowDebt = getVal("borrowDebt");
+  data.debt.catRoomDebt = getVal("catRoomDebt");
+  data.debt.otherDebt = getVal("otherDebt");
+
+  save();
+  updateDebtSummary();
+  alert("債務設定已保存");
+}
+
+function updateDebtInputs(){
+  document.getElementById("borrowDebt").value = data.debt.borrowDebt;
+  document.getElementById("catRoomDebt").value = data.debt.catRoomDebt;
+  document.getElementById("otherDebt").value = data.debt.otherDebt;
+}
+
+function getShortDebtTotal(){
+  return data.debt.borrowDebt + data.debt.catRoomDebt + data.debt.otherDebt;
+}
+
+function updateDebtSummary(){
+  const total = getShortDebtTotal();
+  const dailyTarget = calculateDailySafe();
+  const suggest = Math.max(50, dailyTarget * 0.5);
+
+  document.getElementById("totalShortDebt").innerText = "RM " + total.toFixed(0);
+  document.getElementById("suggestPayDebt").innerText = "RM " + suggest.toFixed(0);
+
+  let days = total > 0 ? Math.ceil(total / suggest) : 0;
+  let d = new Date();
+  d.setDate(d.getDate() + days);
+
+  document.getElementById("shortDebtClearDate").innerText =
+    total <= 0 ? "已清完" : d.toISOString().slice(0,10);
+}
+
+function calculateDailySafe(){
+  const rate = getVal("rate");
+  const salaryRM = getVal("salarySGD") * rate;
+  const sgExpenseRM = (getVal("rentSGD") + getVal("foodSGD") + getVal("carSGD")) * rate;
+  const familyRM = getVal("grandpaRM") + getVal("dadRM") + getVal("momRM") + getVal("catFoodRM");
+  const net = salaryRM - sgExpenseRM;
+  return Math.max(0, (familyRM - net) / 30);
+}
+
+function allocateMoney(){
+  const income = getVal("allocateIncome");
+
+  const debtPercent = getVal("debtPercent");
+  const bufferPercent = getVal("bufferPercent");
+  const selfPercent = getVal("selfPercent");
+
+  const totalPercent = debtPercent + bufferPercent + selfPercent;
+
+  if(totalPercent !== 100){
+    alert("三個比例加起來必須等於 100%");
+    return;
+  }
+
+  const debtPay = income * debtPercent / 100;
+  const buffer = income * bufferPercent / 100;
+  const self = income * selfPercent / 100;
+
+  data.allocation.lastDebtPay = debtPay;
+  data.allocation.lastBuffer = buffer;
+  data.allocation.lastSelf = self;
+
+  save();
+
+  document.getElementById("allocationResult").innerHTML = `
+    <div class="stat">
+      <b>今日收入 RM ${income.toFixed(0)}</b><br>
+      還債：<span class="good">RM ${debtPay.toFixed(0)}</span><br>
+      生活緩衝：<span class="warn">RM ${buffer.toFixed(0)}</span><br>
+      自己保留：<span class="blueText">RM ${self.toFixed(0)}</span>
+    </div>
+  `;
+}
+
+function payDebtFromAllocation(){
+  const pay = data.allocation.lastDebtPay || 0;
+
+  if(pay <= 0){
+    alert("請先計算分配。");
+    return;
+  }
+
+  const ok = confirm("確定用 RM " + pay.toFixed(0) + " 還債嗎？");
+  if(!ok) return;
+
+  let remainPay = pay;
+
+  if(data.debt.borrowDebt > 0){
+    const cut = Math.min(data.debt.borrowDebt, remainPay);
+    data.debt.borrowDebt -= cut;
+    remainPay -= cut;
+  }
+
+  if(remainPay > 0 && data.debt.otherDebt > 0){
+    const cut = Math.min(data.debt.otherDebt, remainPay);
+    data.debt.otherDebt -= cut;
+    remainPay -= cut;
+  }
+
+  if(remainPay > 0 && data.debt.catRoomDebt > 0){
+    const cut = Math.min(data.debt.catRoomDebt, remainPay);
+    data.debt.catRoomDebt -= cut;
+    remainPay -= cut;
+  }
+
+  data.logs.unshift({
+    date:today(),
+    type:"debt",
+    text:"還債 RM " + pay.toFixed(0) + "｜剩餘短債 RM " + getShortDebtTotal().toFixed(0)
+  });
+
+  save();
+  updateDebtInputs();
+  updateDebtSummary();
+  renderLog();
+  renderHistory();
+
+  alert("已扣債務 RM " + pay.toFixed(0));
+}
+
 function renderTasks(){
   const box = document.getElementById("taskList");
   box.innerHTML = "";
@@ -370,7 +558,6 @@ function renderTasks(){
   allTasks.forEach(task=>{
     const key = today() + "_" + task;
     const status = data.tasks[key];
-
     const safeTask = task.replace(/'/g,"\\'");
 
     const div = document.createElement("div");
@@ -446,7 +633,7 @@ function addTask(){
 }
 
 function resetToday(){
-  const ok = confirm("確定重置今天所有任務？");
+  const ok = confirm("確定重置今天所有任務和收入？");
   if(!ok) return;
 
   Object.keys(data.tasks).forEach(k=>{
@@ -477,7 +664,7 @@ function updateTaskRate(){
 }
 
 function updateStreak(){
-  const dailyTarget = calculateFinance();
+  const dailyTarget = calculateDailySafe();
   let streak = 0;
 
   for(let i=0;i<365;i++){
@@ -498,7 +685,7 @@ function updateStreak(){
 
 function updatePenalty(){
   const income = data.incomeByDate[today()] || 0;
-  const dailyTarget = calculateFinance();
+  const dailyTarget = calculateDailySafe();
 
   const allTasks = [...defaultTasks, ...data.customTasks];
   let done = 0;
@@ -543,7 +730,7 @@ function renderHistory(){
     return;
   }
 
-  box.innerHTML = data.logs.slice(0,50).map(x=>`
+  box.innerHTML = data.logs.slice(0,80).map(x=>`
     <div class="stat">
       <b>${x.date}</b><br>${x.text}
     </div>
@@ -558,10 +745,12 @@ function clearAllData(){
   location.reload();
 }
 
+updateDebtInputs();
 calculateFinance();
 calculateDebt();
 renderTasks();
 renderLog();
+renderHistory();
 updateStreak();
 updatePenalty();
 updateLevel(data.incomeByDate[today()] || 0);
