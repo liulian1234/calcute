@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP 勝率計分器</title>
+<style>
+  body{
+    margin:0;
+    font-family:Arial,"Microsoft JhengHei",sans-serif;
+    background:#0b1220;
+    color:white;
+    padding:16px;
+  }
+  .box{
+    max-width:900px;
+    margin:auto;
+  }
+  .card{
+    background:#111827;
+    padding:16px;
+    border-radius:16px;
+    margin-bottom:14px;
+    box-shadow:0 0 12px rgba(0,0,0,.35);
+  }
+  h1,h2{margin-top:0}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:10px;
+  }
+  button,select,input{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    margin-top:8px;
+    font-size:15px;
+  }
+  button{
+    cursor:pointer;
+    font-weight:bold;
+  }
+  .win{background:#22c55e;color:#052e16}
+  .lose{background:#ef4444;color:white}
+  .reset{background:#3b82f6;color:white}
+  .undo{background:#f59e0b;color:#111}
+  .stat{
+    background:#1f2937;
+    padding:12px;
+    border-radius:12px;
+    text-align:center;
+  }
+  .big{
+    font-size:28px;
+    font-weight:bold;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+  }
+  th,td{
+    border-bottom:1px solid #374151;
+    padding:8px;
+    text-align:center;
+    font-size:14px;
+  }
+  .green{color:#22c55e}
+  .red{color:#ef4444}
+  .yellow{color:#facc15}
+</style>
+</head>
+<body>
+
+<div class="box">
+
+  <div class="card">
+    <h1>TP 勝率計分器</h1>
+    <p>規則：Hit 中 = +1，輸 = -1。一局可以同時選 Half TP 和 Full TP。</p>
+  </div>
+
+  <div class="card">
+    <h2>本局選擇</h2>
+
+    <div class="grid">
+      <div>
+        <label>Half TP 倍率</label>
+        <select id="halfTP">
+          <option value="">不選</option>
+          <option value="3">3倍</option>
+          <option value="5">5倍</option>
+          <option value="10">10倍</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Full TP 倍率</label>
+        <select id="fullTP">
+          <option value="">不選</option>
+          <option value="3">3倍</option>
+          <option value="5">5倍</option>
+          <option value="10">10倍</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <button class="win" onclick="recordRound(true)">本局 HIT / 贏 +1</button>
+      <button class="lose" onclick="recordRound(false)">本局 MISS / 輸 -1</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>總分統計</h2>
+
+    <div class="grid">
+      <div class="stat">
+        <div>總分</div>
+        <div class="big" id="totalScore">0</div>
+      </div>
+
+      <div class="stat">
+        <div>總局數</div>
+        <div class="big" id="totalRounds">0</div>
+      </div>
+
+      <div class="stat">
+        <div>勝率</div>
+        <div class="big" id="winRate">0%</div>
+      </div>
+
+      <div class="stat">
+        <div>勝 / 輸</div>
+        <div class="big"><span id="wins">0</span> / <span id="losses">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>倍率命中統計</h2>
+
+    <div class="grid">
+      <div class="stat">
+        <div>3倍分數</div>
+        <div class="big" id="score3">0</div>
+      </div>
+
+      <div class="stat">
+        <div>5倍分數</div>
+        <div class="big" id="score5">0</div>
+      </div>
+
+      <div class="stat">
+        <div>10倍分數</div>
+        <div class="big" id="score10">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>操作</h2>
+    <div class="grid">
+      <button class="undo" onclick="undoLast()">撤回上一局</button>
+      <button class="reset" onclick="resetData()">清空全部資料</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>歷史記錄</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>局數</th>
+          <th>Half TP</th>
+          <th>Full TP</th>
+          <th>結果</th>
+          <th>分數</th>
+          <th>時間</th>
+        </tr>
+      </thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const KEY = "tp_score_tracker_v1";
+
+let data = JSON.parse(localStorage.getItem(KEY)) || [];
+
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function recordRound(isWin){
+  const half = document.getElementById("halfTP").value;
+  const full = document.getElementById("fullTP").value;
+
+  if(!half && !full){
+    alert("請至少選一個倍率：Half TP 或 Full TP");
+    return;
+  }
+
+  const point = isWin ? 1 : -1;
+
+  data.push({
+    halfTP: half,
+    fullTP: full,
+    result: isWin ? "HIT" : "MISS",
+    point: point,
+    time: new Date().toLocaleString()
+  });
+
+  save();
+  render();
+}
+
+function undoLast(){
+  if(data.length === 0){
+    alert("沒有記錄可以撤回");
+    return;
+  }
+  data.pop();
+  save();
+  render();
+}
+
+function resetData(){
+  if(confirm("確定要清空全部資料嗎？")){
+    data = [];
+    save();
+    render();
+  }
+}
+
+function render(){
+  let totalScore = 0;
+  let wins = 0;
+  let losses = 0;
+
+  let score3 = 0;
+  let score5 = 0;
+  let score10 = 0;
+
+  data.forEach(item=>{
+    totalScore += item.point;
+
+    if(item.result === "HIT") wins++;
+    else losses++;
+
+    const selected = [item.halfTP, item.fullTP];
+
+    selected.forEach(tp=>{
+      if(tp === "3") score3 += item.point;
+      if(tp === "5") score5 += item.point;
+      if(tp === "10") score10 += item.point;
+    });
+  });
+
+  const totalRounds = data.length;
+  const winRate = totalRounds > 0 ? ((wins / totalRounds) * 100).toFixed(1) : 0;
+
+  document.getElementById("totalScore").innerText = totalScore;
+  document.getElementById("totalRounds").innerText = totalRounds;
+  document.getElementById("wins").innerText = wins;
+  document.getElementById("losses").innerText = losses;
+  document.getElementById("winRate").innerText = winRate + "%";
+
+  document.getElementById("score3").innerText = score3;
+  document.getElementById("score5").innerText = score5;
+  document.getElementById("score10").innerText = score10;
+
+  const tbody = document.getElementById("history");
+  tbody.innerHTML = "";
+
+  data.slice().reverse().forEach((item,index)=>{
+    const realIndex = data.length - index;
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${realIndex}</td>
+      <td>${item.halfTP ? item.halfTP + "倍" : "-"}</td>
+      <td>${item.fullTP ? item.fullTP + "倍" : "-"}</td>
+      <td class="${item.result === "HIT" ? "green" : "red"}">${item.result}</td>
+      <td class="${item.point > 0 ? "green" : "red"}">${item.point > 0 ? "+1" : "-1"}</td>
+      <td>${item.time}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
