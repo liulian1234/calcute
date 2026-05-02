@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>地球Online｜每日任務系統</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,"Microsoft JhengHei",sans-serif;
+  background:#07111f;
+  color:#fff;
+}
+header{
+  padding:22px;
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  border-bottom:1px solid #334155;
+}
+h1{margin:0;font-size:26px}
+small{color:#94a3b8}
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:16px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:14px;
+}
+.card{
+  background:#111827;
+  border:1px solid #263244;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 8px 25px rgba(0,0,0,.25);
+}
+h2{font-size:18px;margin:0 0 12px}
+input,select,textarea{
+  width:100%;
+  padding:11px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+  margin:6px 0 10px;
+}
+button{
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.primary{background:#22c55e;color:#06220f}
+.danger{background:#ef4444;color:white}
+.blue{background:#38bdf8;color:#00131d}
+.gray{background:#334155;color:white}
+.task{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px;
+  margin:8px 0;
+  background:#0b1220;
+  border-radius:12px;
+  border:1px solid #1e293b;
+}
+.doneText{color:#22c55e;font-weight:bold}
+.failText{color:#ef4444;font-weight:bold}
+.stat{
+  padding:10px;
+  border-radius:12px;
+  background:#0b1220;
+  margin:8px 0;
+}
+.big{
+  font-size:26px;
+  font-weight:bold;
+}
+.warn{color:#facc15}
+.good{color:#22c55e}
+.bad{color:#ef4444}
+.progressBox{
+  width:100%;
+  height:16px;
+  background:#020617;
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid #334155;
+}
+.progress{
+  height:100%;
+  width:0%;
+  background:#22c55e;
+}
+footer{
+  text-align:center;
+  color:#64748b;
+  padding:20px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 地球Online｜每日任務系統</h1>
+  <small>健康監督・收入目標・債務進度・防誤按打卡</small>
+</header>
+
+<main>
+
+<div class="grid">
+
+  <div class="card">
+    <h2>💱 匯率設定</h2>
+    <label>1 SGD = 幾多 RM</label>
+    <input id="rate" type="number" value="3.5" step="0.01">
+    <button class="blue" onclick="saveSettings()">保存設定</button>
+  </div>
+
+  <div class="card">
+    <h2>💰 工資與固定支出</h2>
+
+    <label>月薪 SGD</label>
+    <input id="salarySGD" type="number" value="2200">
+
+    <label>房租 SGD</label>
+    <input id="rentSGD" type="number" value="800">
+
+    <label>吃喝 SGD</label>
+    <input id="foodSGD" type="number" value="300">
+
+    <label>車貸 SGD</label>
+    <input id="carSGD" type="number" value="345">
+
+    <label>爺爺 RM / 月</label>
+    <input id="grandpaRM" type="number" value="1000">
+
+    <label>爸爸 RM / 月</label>
+    <input id="dadRM" type="number" value="2000">
+
+    <label>媽媽 RM / 月平均</label>
+    <input id="momRM" type="number" value="1000">
+
+    <label>貓糧 RM / 月</label>
+    <input id="catFoodRM" type="number" value="500">
+
+    <button class="primary" onclick="calculateFinance()">重新計算</button>
+  </div>
+
+  <div class="card">
+    <h2>📊 今日需要賺多少</h2>
+    <div class="stat">
+      每月可用 RM：<div id="netRM" class="big">-</div>
+    </div>
+    <div class="stat">
+      每月固定壓力 RM：<div id="needRM" class="big">-</div>
+    </div>
+    <div class="stat">
+      每月缺口 RM：<div id="gapRM" class="big bad">-</div>
+    </div>
+    <div class="stat">
+      每天最低目標 RM：<div id="dailyRM" class="big warn">-</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔥 今日收入打卡</h2>
+    <label>今天實際進帳 RM</label>
+    <input id="todayIncome" type="number" placeholder="例如 200">
+    <label>收入來源 / 做了什麼</label>
+    <textarea id="incomeNote" placeholder="例如：工作、線上任務、學習產出、內容製作"></textarea>
+    <button class="primary" onclick="saveIncome()">確認今日收入</button>
+    <p id="incomeResult"></p>
+  </div>
+
+  <div class="card">
+    <h2>🚗 車貸進度</h2>
+    <label>車貸總額 RM</label>
+    <input id="carTotalRM" type="number" value="100000">
+
+    <label>每月還款 RM</label>
+    <input id="carMonthlyRM" type="number" value="1000">
+
+    <label>開始還款日期</label>
+    <input id="carStart" type="date" value="2025-03-14">
+
+    <button class="blue" onclick="calculateDebt()">計算車貸進度</button>
+
+    <div class="stat">
+      已還 RM：<b id="paidRM">-</b><br>
+      剩餘 RM：<b id="leftRM">-</b><br>
+      預計還清：<b id="clearDate">-</b>
+    </div>
+
+    <div class="progressBox">
+      <div id="debtProgress" class="progress"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🧾 其他債務 / 一次性支出</h2>
+    <label>以前借錢 RM</label>
+    <input id="borrowRM" type="number" value="6000">
+
+    <label>升級貓房 RM</label>
+    <input id="catRoomRM" type="number" value="1000">
+
+    <button class="blue" onclick="calculateFinance()">更新壓力</button>
+    <p class="warn">建議：借錢優先清，貓房升級可以分階段，不要一次爆掉現金流。</p>
+  </div>
+
+</div>
+
+<div class="card">
+  <h2>✅ 今日任務打卡</h2>
+  <p class="warn">每次按完成都要二次確認 + 輸入證明，防止自己亂按。</p>
+
+  <div id="taskList"></div>
+
+  <button class="blue" onclick="addTask()">新增任務</button>
+  <button class="gray" onclick="resetToday()">重置今天</button>
+</div>
+
+<div class="card">
+  <h2>📜 今日紀錄</h2>
+  <div id="log"></div>
+</div>
+
+</main>
+
+<footer>
+  地球Online：不要靠情緒活，靠系統活。
+</footer>
+
+<script>
+const KEY = "earth_online_life_system_v1";
+
+let defaultTasks = [
+  "刷牙 / 牙齦照顧",
+  "處理鼻塞 / 熱蒸氣 / 看醫生安排",
+  "不喝酒",
+  "曬太陽或走路 15 分鐘",
+  "工作穩定完成",
+  "學習 / 線上技能 30 分鐘",
+  "更新收入紀錄",
+  "睡前整理明天任務"
+];
+
+let data = JSON.parse(localStorage.getItem(KEY)) || {
+  tasks:{},
+  logs:[],
+  customTasks:[]
+};
+
+function today(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(data));
+}
+
+function getVal(id){
+  return Number(document.getElementById(id).value) || 0;
+}
+
+function saveSettings(){
+  calculateFinance();
+  calculateDebt();
+  alert("設定已保存");
+}
+
+function calculateFinance(){
+  const rate = getVal("rate");
+
+  const salaryRM = getVal("salarySGD") * rate;
+  const sgExpenseRM = (getVal("rentSGD") + getVal("foodSGD") + getVal("carSGD")) * rate;
+
+  const familyRM =
+    getVal("grandpaRM") +
+    getVal("dadRM") +
+    getVal("momRM") +
+    getVal("catFoodRM");
+
+  const oneTimePressure =
+    getVal("borrowRM") +
+    getVal("catRoomRM");
+
+  const net = salaryRM - sgExpenseRM;
+  const monthlyNeed = familyRM;
+  const gap = monthlyNeed - net;
+  const daily = Math.max(0, gap / 30);
+
+  document.getElementById("netRM").innerText = "RM " + net.toFixed(0);
+  document.getElementById("needRM").innerText = "RM " + monthlyNeed.toFixed(0);
+  document.getElementById("gapRM").innerText = "RM " + gap.toFixed(0);
+  document.getElementById("dailyRM").innerText = "RM " + daily.toFixed(0);
+
+  return daily;
+}
+
+function saveIncome(){
+  const income = getVal("todayIncome");
+  const note = document.getElementById("incomeNote").value.trim();
+  const dailyTarget = calculateFinance();
+
+  if(!income || note.length < 3){
+    alert("請輸入收入和證明，不要亂按。");
+    return;
+  }
+
+  const ok = confirm("你確定今天真的進帳 RM " + income + " 嗎？");
+  if(!ok) return;
+
+  data.logs.unshift({
+    date:today(),
+    type:"income",
+    text:"今日收入 RM " + income + "｜" + note
+  });
+
+  save();
+
+  document.getElementById("incomeResult").innerHTML =
+    income >= dailyTarget
+    ? "<span class='good'>🔥 今日達標！</span>"
+    : "<span class='bad'>未達標，還差 RM " + (dailyTarget-income).toFixed(0) + "</span>";
+
+  renderLog();
+}
+
+function calculateDebt(){
+  const total = getVal("carTotalRM");
+  const monthly = getVal("carMonthlyRM");
+  const start = new Date(document.getElementById("carStart").value);
+  const now = new Date();
+
+  let months =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth());
+
+  if(now.getDate() >= start.getDate()) months += 1;
+  if(months < 0) months = 0;
+
+  const paid = Math.min(total, months * monthly);
+  const left = Math.max(0, total - paid);
+  const percent = total ? (paid / total) * 100 : 0;
+
+  const remainMonths = Math.ceil(left / monthly);
+  let clear = new Date(now);
+  clear.setMonth(clear.getMonth() + remainMonths);
+
+  document.getElementById("paidRM").innerText = paid.toFixed(0);
+  document.getElementById("leftRM").innerText = left.toFixed(0);
+  document.getElementById("clearDate").innerText =
+    clear.getFullYear() + "-" + String(clear.getMonth()+1).padStart(2,"0");
+
+  document.getElementById("debtProgress").style.width = percent + "%";
+}
+
+function renderTasks(){
+  const box = document.getElementById("taskList");
+  box.innerHTML = "";
+
+  const allTasks = [...defaultTasks, ...data.customTasks];
+
+  allTasks.forEach((task,i)=>{
+    const key = today() + "_" + task;
+    const status = data.tasks[key];
+
+    const div = document.createElement("div");
+    div.className = "task";
+
+    div.innerHTML = `
+      <div>
+        <b>${task}</b><br>
+        <small>${status ? status : "未完成"}</small>
+      </div>
+      <div>
+        <button class="primary" onclick="completeTask('${task}')">✔</button>
+        <button class="danger" onclick="failTask('${task}')">✘</button>
+      </div>
+    `;
+    box.appendChild(div);
+  });
+}
+
+function completeTask(task){
+  const ok = confirm("你真的完成「" + task + "」了嗎？");
+  if(!ok) return;
+
+  const proof = prompt("輸入證明：你做了什麼？");
+  if(!proof || proof.length < 3){
+    alert("證明太短，不算完成。");
+    return;
+  }
+
+  const key = today() + "_" + task;
+  data.tasks[key] = "✔ 已完成：" + proof;
+
+  data.logs.unshift({
+    date:today(),
+    type:"task",
+    text:"完成任務：" + task + "｜證明：" + proof
+  });
+
+  save();
+  renderTasks();
+  renderLog();
+}
+
+function failTask(task){
+  const reason = prompt("為什麼沒完成？");
+  const key = today() + "_" + task;
+
+  data.tasks[key] = "✘ 未完成：" + (reason || "沒有原因");
+
+  data.logs.unshift({
+    date:today(),
+    type:"task",
+    text:"未完成：" + task + "｜原因：" + (reason || "沒有原因")
+  });
+
+  save();
+  renderTasks();
+  renderLog();
+}
+
+function addTask(){
+  const task = prompt("輸入新任務名稱");
+  if(!task || task.length < 2) return;
+
+  data.customTasks.push(task);
+  save();
+  renderTasks();
+}
+
+function resetToday(){
+  const ok = confirm("確定重置今天所有任務？");
+  if(!ok) return;
+
+  Object.keys(data.tasks).forEach(k=>{
+    if(k.startsWith(today())) delete data.tasks[k];
+  });
+
+  save();
+  renderTasks();
+}
+
+function renderLog(){
+  const box = document.getElementById("log");
+  const todayLogs = data.logs.filter(x=>x.date === today());
+
+  if(todayLogs.length === 0){
+    box.innerHTML = "<p class='warn'>今天還沒有紀錄。</p>";
+    return;
+  }
+
+  box.innerHTML = todayLogs.map(x=>`
+    <div class="stat">
+      ${x.text}
+    </div>
+  `).join("");
+}
+
+calculateFinance();
+calculateDebt();
+renderTasks();
+renderLog();
+</script>
+
+</body>
+</html>
