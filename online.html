@@ -6,124 +6,60 @@
 <title>地球Online V3｜人生任務系統</title>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,"Microsoft JhengHei",sans-serif;
-  background:#07111f;
-  color:white;
-}
-header{
-  padding:22px;
-  background:linear-gradient(135deg,#0f172a,#1e293b);
-  border-bottom:1px solid #334155;
-}
+body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#07111f;color:white}
+header{padding:22px;background:linear-gradient(135deg,#0f172a,#1e293b);border-bottom:1px solid #334155}
 h1{margin:0;font-size:26px}
 small{color:#94a3b8}
 main{max-width:1150px;margin:auto;padding:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.card{
-  background:#111827;
-  border:1px solid #263244;
-  border-radius:18px;
-  padding:16px;
-  margin-bottom:14px;
-  box-shadow:0 8px 25px rgba(0,0,0,.25);
-}
+.card{background:#111827;border:1px solid #263244;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 8px 25px rgba(0,0,0,.25)}
 h2{font-size:18px;margin:0 0 12px}
-input,textarea{
-  width:100%;
-  padding:11px;
-  border-radius:10px;
-  border:1px solid #334155;
-  background:#020617;
-  color:white;
-  margin:6px 0 10px;
-}
-button{
-  border:0;
-  border-radius:10px;
-  padding:10px 13px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:3px;
-}
+input,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#020617;color:white;margin:6px 0 10px}
+button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;font-weight:bold;margin:3px}
 .primary{background:#22c55e;color:#06220f}
 .danger{background:#ef4444;color:white}
 .blue{background:#38bdf8;color:#00131d}
 .gray{background:#334155;color:white}
-.yellow{background:#facc15;color:#1f1300}
-.task{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding:10px;
-  margin:8px 0;
-  background:#0b1220;
-  border-radius:12px;
-  border:1px solid #1e293b;
-}
-.stat{
-  padding:10px;
-  border-radius:12px;
-  background:#0b1220;
-  margin:8px 0;
-}
+.task{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;margin:8px 0;background:#0b1220;border-radius:12px;border:1px solid #1e293b}
+.stat{padding:10px;border-radius:12px;background:#0b1220;margin:8px 0}
 .big{font-size:26px;font-weight:bold}
 .warn{color:#facc15}
 .good{color:#22c55e}
 .bad{color:#ef4444}
-.progressBox{
-  width:100%;
-  height:17px;
-  background:#020617;
-  border-radius:999px;
-  overflow:hidden;
-  border:1px solid #334155;
-}
-.progress{
-  height:100%;
-  width:0%;
-  background:#22c55e;
-}
-.level{
-  font-size:28px;
-  font-weight:bold;
-  padding:14px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #334155;
-}
+.progressBox{width:100%;height:17px;background:#020617;border-radius:999px;overflow:hidden;border:1px solid #334155}
+.progress{height:100%;width:0%;background:#22c55e}
+.level{font-size:28px;font-weight:bold;padding:14px;border-radius:14px;background:#020617;border:1px solid #334155}
 footer{text-align:center;color:#64748b;padding:20px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌍 地球Online V3｜人生任務系統</h1>
-  <small>收入等級・連勝系統・健康監督・債務進度・防誤按打卡</small>
+<h1>🌍 地球Online V3｜人生任務系統</h1>
+<small>自動匯率・收入等級・連勝系統・健康監督・債務進度・防誤按打卡</small>
 </header>
 
 <main>
 
 <div class="card">
-  <h2>🔥 今日核心任務</h2>
-  <div class="level" id="todayLevel">等待輸入收入...</div>
-  <p id="motivation" class="warn">今天不是要完美，是要推進一點點。</p>
+<h2>🔥 今日核心任務</h2>
+<div class="level" id="todayLevel">等待輸入收入...</div>
+<p id="motivation" class="warn">今天不是要完美，是要推進一點點。</p>
 </div>
 
 <div class="grid">
 
 <div class="card">
-<h2>💱 匯率設定</h2>
+<h2>💱 SGD → MYR 匯率</h2>
 <label>1 SGD = RM</label>
-<input id="rate" type="number" value="3.5" step="0.01">
-<button class="blue" onclick="saveSettings()">保存設定</button>
+<input id="rate" type="number" value="3.5" step="0.0001">
+<button class="blue" onclick="fetchRate()">自動更新國際匯率</button>
+<button class="gray" onclick="saveSettings()">保存手動匯率</button>
+<p id="rateStatus" class="warn">尚未更新</p>
 </div>
 
 <div class="card">
 <h2>💰 工資與固定支出</h2>
-
 <label>月薪 SGD</label>
 <input id="salarySGD" type="number" value="2200">
 
@@ -180,7 +116,6 @@ footer{text-align:center;color:#64748b;padding:20px}
 
 <div class="card">
 <h2>🚗 車貸進度</h2>
-
 <label>車貸總額 RM</label>
 <input id="carTotalRM" type="number" value="100000">
 
@@ -205,7 +140,6 @@ footer{text-align:center;color:#64748b;padding:20px}
 
 <div class="card">
 <h2>🧾 其他債務 / 一次性支出</h2>
-
 <label>以前借錢 RM</label>
 <input id="borrowRM" type="number" value="6000">
 
@@ -221,9 +155,7 @@ footer{text-align:center;color:#64748b;padding:20px}
 <div class="card">
 <h2>✅ 今日任務打卡</h2>
 <p class="warn">每次按完成都要二次確認 + 輸入證明，防止自己亂按。</p>
-
 <div id="taskList"></div>
-
 <button class="blue" onclick="addTask()">新增任務</button>
 <button class="gray" onclick="resetToday()">重置今天</button>
 </div>
@@ -278,6 +210,34 @@ function save(){
 
 function getVal(id){
   return Number(document.getElementById(id).value) || 0;
+}
+
+async function fetchRate(){
+  const status = document.getElementById("rateStatus");
+  status.innerText = "正在更新國際匯率...";
+
+  try{
+    const res = await fetch("https://api.frankfurter.dev/v1/latest?base=SGD&symbols=MYR");
+    const json = await res.json();
+
+    const rate = json.rates.MYR;
+
+    if(!rate){
+      throw new Error("沒有讀到 MYR 匯率");
+    }
+
+    document.getElementById("rate").value = rate.toFixed(4);
+    status.innerText = "已更新：1 SGD = RM " + rate.toFixed(4);
+
+    calculateFinance();
+    updateStreak();
+    updatePenalty();
+
+  }catch(err){
+    status.innerText = "匯率更新失敗，暫時使用手動匯率";
+    calculateFinance();
+    console.error(err);
+  }
 }
 
 function saveSettings(){
@@ -411,6 +371,8 @@ function renderTasks(){
     const key = today() + "_" + task;
     const status = data.tasks[key];
 
+    const safeTask = task.replace(/'/g,"\\'");
+
     const div = document.createElement("div");
     div.className = "task";
 
@@ -420,8 +382,8 @@ function renderTasks(){
         <small>${status ? status : "未完成"}</small>
       </div>
       <div>
-        <button class="primary" onclick="completeTask('${task.replace(/'/g,"\\'")}')">✔</button>
-        <button class="danger" onclick="failTask('${task.replace(/'/g,"\\'")}')">✘</button>
+        <button class="primary" onclick="completeTask('${safeTask}')">✔</button>
+        <button class="danger" onclick="failTask('${safeTask}')">✘</button>
       </div>
     `;
 
@@ -603,6 +565,7 @@ renderLog();
 updateStreak();
 updatePenalty();
 updateLevel(data.incomeByDate[today()] || 0);
+fetchRate();
 </script>
 
 </body>
