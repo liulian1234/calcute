@@ -35,6 +35,53 @@ th,td{border-bottom:1px solid #374151;padding:8px;text-align:center;font-size:14
 </div>
 
 <div class="card">
+<h2>🎯 目標局數計算</h2>
+
+<div class="grid">
+<div>
+<label>本金</label>
+<input id="capital" type="number" value="200">
+</div>
+
+<div>
+<label>目標盈利</label>
+<input id="targetProfit" type="number" value="200">
+</div>
+</div>
+
+<button class="reset" onclick="calcTargetRounds()">計算還需要多少局</button>
+
+<div class="grid" style="margin-top:12px;">
+<div class="stat">
+<div>目前盈利</div>
+<div class="big" id="currentProfit">0</div>
+</div>
+
+<div class="stat">
+<div>還差盈利</div>
+<div class="big red" id="remainProfit">0</div>
+</div>
+
+<div class="stat">
+<div>如果只中 x3 還要</div>
+<div class="big" id="needX3">0局</div>
+</div>
+
+<div class="stat">
+<div>如果只中 x5 還要</div>
+<div class="big" id="needX5">0局</div>
+</div>
+
+<div class="stat">
+<div>如果只中 x10 還要</div>
+<div class="big" id="needX10">0局</div>
+</div>
+</div>
+
+<p class="yellow" id="targetNote"></p>
+</div>
+
+<div class="card">
 <h2>本局選擇</h2>
 
 <div class="grid">
@@ -140,7 +187,7 @@ th,td{border-bottom:1px solid #374151;padding:8px;text-align:center;font-size:14
 </div>
 
 <script>
-const KEY = "tp_score_tracker_money_v1";
+const KEY = "tp_score_tracker_money_v2";
 
 let data = JSON.parse(localStorage.getItem(KEY)) || [];
 
@@ -197,6 +244,41 @@ function resetData(){
   }
 }
 
+function calcTargetRounds(){
+  const capital = Number(document.getElementById("capital").value) || 0;
+  const targetProfit = Number(document.getElementById("targetProfit").value) || 0;
+
+  let currentProfit = 0;
+
+  data.forEach(item=>{
+    currentProfit += item.money || 0;
+  });
+
+  const remainProfit = Math.max(0, targetProfit - currentProfit);
+
+  const x3Profit = 3 * 3;
+  const x5Profit = 3 * 5;
+  const x10Profit = 3 * 10;
+
+  document.getElementById("currentProfit").innerText = currentProfit;
+  document.getElementById("remainProfit").innerText = remainProfit;
+
+  document.getElementById("needX3").innerText =
+    Math.ceil(remainProfit / x3Profit) + "局";
+
+  document.getElementById("needX5").innerText =
+    Math.ceil(remainProfit / x5Profit) + "局";
+
+  document.getElementById("needX10").innerText =
+    Math.ceil(remainProfit / x10Profit) + "局";
+
+  document.getElementById("targetNote").innerText =
+    "本金 " + capital +
+    "，目標盈利 " + targetProfit +
+    "。目前盈利 " + currentProfit +
+    "，還差 " + remainProfit + "。";
+}
+
 function render(){
   let totalMoney = 0;
   let wins = 0;
@@ -220,6 +302,7 @@ function render(){
 
       if(item.halfTP === "10") score10 += 3 * 10;
       if(item.fullTP === "10") score10 += 3 * 10;
+
     }else{
       losses++;
     }
@@ -256,6 +339,8 @@ function render(){
 
     tbody.appendChild(tr);
   });
+
+  calcTargetRounds();
 }
 
 render();
