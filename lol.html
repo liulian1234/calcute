@@ -5,67 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TP 勝率計分器</title>
 <style>
-  body{
-    margin:0;
-    font-family:Arial,"Microsoft JhengHei",sans-serif;
-    background:#0b1220;
-    color:white;
-    padding:16px;
-  }
-  .box{
-    max-width:900px;
-    margin:auto;
-  }
-  .card{
-    background:#111827;
-    padding:16px;
-    border-radius:16px;
-    margin-bottom:14px;
-    box-shadow:0 0 12px rgba(0,0,0,.35);
-  }
+  body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#0b1220;color:white;padding:16px}
+  .box{max-width:900px;margin:auto}
+  .card{background:#111827;padding:16px;border-radius:16px;margin-bottom:14px;box-shadow:0 0 12px rgba(0,0,0,.35)}
   h1,h2{margin-top:0}
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:10px;
-  }
-  button,select,input{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    margin-top:8px;
-    font-size:15px;
-  }
-  button{
-    cursor:pointer;
-    font-weight:bold;
-  }
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  button,select,input{width:100%;padding:12px;border:none;border-radius:12px;margin-top:8px;font-size:15px}
+  button{cursor:pointer;font-weight:bold}
   .win{background:#22c55e;color:#052e16}
   .lose{background:#ef4444;color:white}
   .reset{background:#3b82f6;color:white}
   .undo{background:#f59e0b;color:#111}
-  .stat{
-    background:#1f2937;
-    padding:12px;
-    border-radius:12px;
-    text-align:center;
-  }
-  .big{
-    font-size:28px;
-    font-weight:bold;
-  }
-  table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:10px;
-  }
-  th,td{
-    border-bottom:1px solid #374151;
-    padding:8px;
-    text-align:center;
-    font-size:14px;
-  }
+  .calc{background:#a855f7;color:white}
+  .stat{background:#1f2937;padding:12px;border-radius:12px;text-align:center}
+  .big{font-size:28px;font-weight:bold}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid #374151;padding:8px;text-align:center;font-size:14px}
   .green{color:#22c55e}
   .red{color:#ef4444}
   .yellow{color:#facc15}
@@ -78,6 +33,58 @@
   <div class="card">
     <h1>TP 勝率計分器</h1>
     <p>規則：Hit 中 = +1，輸 = -1。一局可以同時選 Half TP 和 Full TP。</p>
+  </div>
+
+  <div class="card">
+    <h2>💰 本金 / 目標 / 需要贏多少局</h2>
+
+    <div class="grid">
+      <div>
+        <label>本金</label>
+        <input id="capital" type="number" value="200">
+      </div>
+
+      <div>
+        <label>目標盈利</label>
+        <input id="targetProfit" type="number" value="200">
+      </div>
+
+      <div>
+        <label>每局下注</label>
+        <input id="betAmount" type="number" value="10">
+      </div>
+
+      <div>
+        <label>出場倍率</label>
+        <input id="cashoutMultiplier" type="number" value="1.5" step="0.1">
+      </div>
+    </div>
+
+    <button class="calc" onclick="calcNeedWins()">計算需要贏多少局</button>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="stat">
+        <div>每贏一局盈利</div>
+        <div class="big" id="profitPerWin">0</div>
+      </div>
+
+      <div class="stat">
+        <div>需要淨贏局數</div>
+        <div class="big yellow" id="needNetWins">0</div>
+      </div>
+
+      <div class="stat">
+        <div>目前淨勝局</div>
+        <div class="big" id="currentNetWins">0</div>
+      </div>
+
+      <div class="stat">
+        <div>還差淨勝局</div>
+        <div class="big red" id="remainingWins">0</div>
+      </div>
+    </div>
+
+    <p id="calcNote" class="yellow"></p>
   </div>
 
   <div class="card">
@@ -186,7 +193,7 @@
 </div>
 
 <script>
-const KEY = "tp_score_tracker_v1";
+const KEY = "tp_score_tracker_v2";
 
 let data = JSON.parse(localStorage.getItem(KEY)) || [];
 
@@ -233,6 +240,43 @@ function resetData(){
     save();
     render();
   }
+}
+
+function calcNeedWins(){
+  const capital = Number(document.getElementById("capital").value) || 0;
+  const targetProfit = Number(document.getElementById("targetProfit").value) || 0;
+  const betAmount = Number(document.getElementById("betAmount").value) || 0;
+  const multiplier = Number(document.getElementById("cashoutMultiplier").value) || 0;
+
+  if(betAmount <= 0 || multiplier <= 1 || targetProfit <= 0){
+    alert("請確認：每局下注 > 0，倍率 > 1，目標盈利 > 0");
+    return;
+  }
+
+  const profitPerWin = betAmount * (multiplier - 1);
+  const needNetWins = Math.ceil(targetProfit / profitPerWin);
+
+  let currentNetWins = 0;
+  data.forEach(item=>{
+    currentNetWins += item.point;
+  });
+
+  const remaining = Math.max(0, needNetWins - currentNetWins);
+
+  document.getElementById("profitPerWin").innerText = profitPerWin.toFixed(2);
+  document.getElementById("needNetWins").innerText = needNetWins;
+  document.getElementById("currentNetWins").innerText = currentNetWins;
+  document.getElementById("remainingWins").innerText = remaining;
+
+  const finalTarget = capital + targetProfit;
+
+  document.getElementById("calcNote").innerText =
+    "本金 " + capital +
+    "，目標變成 " + finalTarget +
+    "。每局下注 " + betAmount +
+    "，" + multiplier + "x 出場，每贏一局賺 " +
+    profitPerWin.toFixed(2) +
+    "，所以需要淨贏 " + needNetWins + " 局。注意：這是淨勝局，不是總勝局。";
 }
 
 function render(){
@@ -290,6 +334,8 @@ function render(){
 
     tbody.appendChild(tr);
   });
+
+  calcNeedWins();
 }
 
 render();
